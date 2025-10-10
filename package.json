@@ -1,0 +1,42 @@
+{
+  "name": "event-adventure-game",
+  "displayName": "事件冒險遊戲",
+  "version": "1.0.0",
+  "description": "一個使用 Phaser 3 製作的事件驅動冒險遊戲",
+  "main": "index.js",
+  "scripts": {
+    "start": "http-server -p 8000",
+    "build": "echo 'Building for production...'",
+    "cordova-build-android": "cordova build android",
+    "cordova-build-ios": "cordova build ios",
+    "cordova-run-android": "cordova run android",
+    "cordova-run-ios": "cordova run ios"
+  },
+  "keywords": [
+    "phaser",
+    "game",
+    "mobile",
+    "cordova",
+    "android",
+    "ios"
+  ],
+  "author": "Game Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "cordova": "^12.0.0"
+  },
+  "cordova": {
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "plugins": {
+      "cordova-plugin-whitelist": {},
+      "cordova-plugin-statusbar": {},
+      "cordova-plugin-device": {},
+      "cordova-plugin-splashscreen": {},
+      "cordova-plugin-screen-orientation": {}
+    }
+  }
+}

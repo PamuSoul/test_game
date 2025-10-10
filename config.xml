@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.example.eventadventure" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>事件冒險遊戲</name>
+    <description>
+        一個使用 Phaser 3 製作的事件驅動冒險遊戲
+    </description>
+    <author email="dev@example.com" href="http://example.com">
+        遊戲開發團隊
+    </author>
+    <content src="index.html" />
+    
+    <!-- 全域設定 -->
+    <preference name="DisallowOverscroll" value="true" />
+    <preference name="BackgroundColor" value="0xff2c3e50" />
+    <preference name="HideKeyboardFormAccessoryBar" value="true" />
+    <preference name="Orientation" value="portrait" />
+    <preference name="Fullscreen" value="true" />
+    
+    <!-- Android 設定 -->
+    <platform name="android">
+        <preference name="Orientation" value="portrait" />
+        <preference name="android-minSdkVersion" value="21" />
+        <preference name="android-targetSdkVersion" value="33" />
+        <preference name="StatusBarOverlaysWebView" value="false" />
+        <preference name="StatusBarBackgroundColor" value="#2c3e50" />
+        <preference name="StatusBarStyle" value="lightcontent" />
+        
+        <!-- 圖示和啟動畫面 -->
+        <icon density="mdpi" src="res/android/mdpi.png" />
+        <icon density="hdpi" src="res/android/hdpi.png" />
+        <icon density="xhdpi" src="res/android/xhdpi.png" />
+        <icon density="xxhdpi" src="res/android/xxhdpi.png" />
+        <icon density="xxxhdpi" src="res/android/xxxhdpi.png" />
+        
+        <splash density="port-mdpi" src="res/android/splash-port-mdpi.png" />
+        <splash density="port-hdpi" src="res/android/splash-port-hdpi.png" />
+        <splash density="port-xhdpi" src="res/android/splash-port-xhdpi.png" />
+        <splash density="port-xxhdpi" src="res/android/splash-port-xxhdpi.png" />
+        <splash density="port-xxxhdpi" src="res/android/splash-port-xxxhdpi.png" />
+    </platform>
+    
+    <!-- iOS 設定 -->
+    <platform name="ios">
+        <preference name="Orientation" value="portrait" />
+        <preference name="StatusBarOverlaysWebView" value="false" />
+        <preference name="StatusBarBackgroundColor" value="#2c3e50" />
+        <preference name="StatusBarStyle" value="lightcontent" />
+        <preference name="WKWebViewOnly" value="true" />
+        <preference name="WKSuspendInBackground" value="false" />
+        
+        <!-- 圖示 -->
+        <icon height="57" src="res/ios/icon-57.png" width="57" />
+        <icon height="114" src="res/ios/icon-57-2x.png" width="114" />
+        <icon height="72" src="res/ios/icon-72.png" width="72" />
+        <icon height="144" src="res/ios/icon-72-2x.png" width="144" />
+        <icon height="60" src="res/ios/icon-60.png" width="60" />
+        <icon height="120" src="res/ios/icon-60-2x.png" width="120" />
+        <icon height="180" src="res/ios/icon-60-3x.png" width="180" />
+        <icon height="76" src="res/ios/icon-76.png" width="76" />
+        <icon height="152" src="res/ios/icon-76-2x.png" width="152" />
+        <icon height="167" src="res/ios/icon-83.5-2x.png" width="167" />
+        <icon height="1024" src="res/ios/icon-1024.png" width="1024" />
+        
+        <!-- 啟動畫面 -->
+        <splash height="1136" src="res/ios/Default-568h@2x~iphone.png" width="640" />
+        <splash height="1334" src="res/ios/Default-667h.png" width="750" />
+        <splash height="2208" src="res/ios/Default-736h.png" width="1242" />
+        <splash height="2436" src="res/ios/Default-2436h.png" width="1125" />
+        <splash height="2732" src="res/ios/Default@2x~universal~anyany.png" width="2732" />
+    </platform>
+    
+    <!-- 權限 -->
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+    
+    <!-- 插件 -->
+    <plugin name="cordova-plugin-whitelist" spec="1" />
+    <plugin name="cordova-plugin-statusbar" spec="2" />
+    <plugin name="cordova-plugin-device" spec="2" />
+    <plugin name="cordova-plugin-splashscreen" spec="5" />
+    <plugin name="cordova-plugin-screen-orientation" spec="3" />
+</widget>
