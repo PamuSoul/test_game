@@ -1,3 +1,171 @@
+// 首頁場景
+class StartScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'StartScene' });
+    }
+
+    preload() {
+        // 載入背景圖片
+        this.load.image('backgroundImg', ASSETS.images.background);
+        
+        // 設置載入錯誤處理
+        this.load.on('loaderror', (file) => {
+            console.log('載入失敗:', file.src);
+        });
+        
+        // 載入完成後創建備用背景
+        this.load.on('complete', () => {
+            if (!this.textures.exists('backgroundImg')) {
+                // 創建預設漸層背景
+                this.add.graphics()
+                    .fillGradientStyle(0x87CEEB, 0x87CEEB, 0x98FB98, 0x98FB98)
+                    .fillRect(0, 0, 375, 667)
+                    .generateTexture('backgroundImg', 375, 667);
+            }
+        });
+    }
+
+    create() {
+        // 添加背景圖片
+        const bg = this.add.image(187.5, 333.5, 'backgroundImg');
+        bg.setOrigin(0.5);
+        
+        // 確保背景圖片適合螢幕尺寸
+        if (this.textures.exists('backgroundImg')) {
+            const bgTexture = this.textures.get('backgroundImg');
+            const bgWidth = bgTexture.source[0].width;
+            const bgHeight = bgTexture.source[0].height;
+            
+            const scaleX = 375 / bgWidth;
+            const scaleY = 667 / bgHeight;
+            const bgScale = Math.max(scaleX, scaleY);
+            
+            bg.setScale(bgScale);
+        }
+
+        // 遊戲標題
+        this.add.text(187.5, 200, '事件冒險遊戲', {
+            fontSize: '32px',
+            fill: '#2c3e50',
+            fontWeight: 'bold',
+            stroke: '#ffffff',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        // 副標題
+        this.add.text(187.5, 250, '準備好開始你的冒險了嗎？', {
+            fontSize: '16px',
+            fill: '#2c3e50',
+            fontWeight: 'bold',
+            stroke: '#ffffff',
+            strokeThickness: 1
+        }).setOrigin(0.5);
+
+        // 創建開始遊戲按鈕
+        const startButtonBg = this.add.rectangle(0, 0, 250, 70, 0x27ae60, 1);
+        startButtonBg.setStrokeStyle(4, 0x1e8449);
+        
+        const startButtonText = this.add.text(0, 0, '開始遊戲', {
+            fontSize: '24px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const startButton = this.add.container(187.5, 400, [startButtonBg, startButtonText]);
+        
+        // 設置按鈕互動
+        startButton.setSize(250, 70);
+        startButton.setInteractive({ useHandCursor: true });
+        
+        // 按鈕效果
+        startButton.on('pointerover', () => {
+            startButtonBg.setFillStyle(0x1e8449);
+            startButton.setScale(1.05);
+        });
+
+        startButton.on('pointerout', () => {
+            startButtonBg.setFillStyle(0x27ae60);
+            startButton.setScale(1);
+        });
+
+        startButton.on('pointerdown', () => {
+            startButton.setScale(0.95);
+            this.time.delayedCall(100, () => {
+                startButton.setScale(1.05);
+                // 切換到遊戲場景
+                this.scene.start('GameScene');
+            });
+        });
+
+        // 版權信息
+        this.add.text(187.5, 580, 'Made with Phaser 3', {
+            fontSize: '12px',
+            fill: '#7f8c8d',
+            fontStyle: 'italic'
+        }).setOrigin(0.5);
+    }
+}
+
+// 遊戲場景
+class GameScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'GameScene' });
+        
+        // 遊戲變數
+        this.player = null;
+        this.playerHealth = 100;
+        this.maxHealth = 100;
+        this.healthBar = null;
+        this.healthBarBg = null;
+        this.healthText = null;
+        this.levelText = null;
+        this.eventTextBox = null;
+        this.eventText = null;
+        this.nextLevelButton = null;
+        this.currentLevel = 1;
+        this.backgroundMusic = null;
+        this.soundEffects = {};
+    }
+
+    preload() {
+        // 載入外部圖片資源 (如果存在)
+        this.load.image('playerImg', ASSETS.images.player);
+        this.load.image('backgroundImg', ASSETS.images.background);
+        this.load.image('buttonImg', ASSETS.images.button);
+        this.load.image('healthBarBgImg', ASSETS.images.healthBarBg);
+        this.load.image('healthBarImg', ASSETS.images.healthBar);
+        this.load.image('textBoxImg', ASSETS.images.textBox);
+        
+        // 載入音頻資源 (如果存在)
+        this.load.audio('bgMusic', ASSETS.audio.backgroundMusic);
+        this.load.audio('btnClick', ASSETS.audio.buttonClick);
+        this.load.audio('eventPos', ASSETS.audio.eventPositive);
+        this.load.audio('eventNeg', ASSETS.audio.eventNegative);
+        this.load.audio('lvlUp', ASSETS.audio.levelUp);
+        this.load.audio('gmOver', ASSETS.audio.gameOver);
+        
+        // 設置載入錯誤處理
+        this.load.on('loaderror', (file) => {
+            console.log('載入失敗:', file.src);
+        });
+        
+        // 載入完成後創建備用圖形
+        this.load.on('complete', () => {
+            console.log('資源載入完成');
+            this.createFallbackGraphics();
+        });
+        
+        // 載入進度
+        this.load.on('progress', (progress) => {
+            console.log('載入進度:', Math.round(progress * 100) + '%');
+        });
+        
+        // 檔案載入成功
+        this.load.on('filecomplete', (key, type, data) => {
+            console.log('檔案載入成功:', key, type);
+        });
+    }
+
 // 遊戲配置
 const config = {
     type: Phaser.AUTO,
@@ -11,27 +179,8 @@ const config = {
         width: 375,
         height: 667
     },
-    scene: {
-        preload: preload,
-        create: create,
-        update: update
-    }
+    scene: [StartScene, GameScene]
 };
-
-// 遊戲變數
-let player;
-let playerHealth = 100;
-let maxHealth = 100;
-let healthBar;
-let healthBarBg;
-let healthText;
-let levelText;
-let eventTextBox;
-let eventText;
-let nextLevelButton;
-let currentLevel = 1;
-let backgroundMusic;
-let soundEffects = {};
 
 // 資源路徑
 const ASSETS = {
