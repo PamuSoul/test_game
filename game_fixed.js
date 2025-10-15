@@ -247,8 +247,8 @@ class GameScene extends Phaser.Scene {
         // 初始化音頻
         this.initializeAudio();
         
-        // 創建玩家
-        this.player = this.add.sprite(187.5, 180, 'playerImg');
+        // 創建玩家 - 往左邊移動，往下一點
+        this.player = this.add.sprite(80, 220, 'playerImg');
         
         // 根據圖片載入情況調整縮放
         if (this.textures.exists('playerImg')) {
@@ -281,8 +281,8 @@ class GameScene extends Phaser.Scene {
         });
         this.levelText.setOrigin(0.5);
 
-        // 血量文字
-        this.healthText = this.add.text(187.5, 110, `血量: ${this.playerHealth}/${this.maxHealth}`, {
+        // 血量文字 - 往上貼著關卡顯示
+        this.healthText = this.add.text(187.5, 75, `血量: ${this.playerHealth}/${this.maxHealth}`, {
             fontSize: '14px',
             fill: '#2c3e50',
             fontWeight: 'bold',
@@ -290,22 +290,22 @@ class GameScene extends Phaser.Scene {
             strokeThickness: 1
         }).setOrigin(0.5);
 
-        // 創建血量條背景
-        this.healthBarBg = this.add.image(187.5, 125, 'healthBarBgImg');
+        // 創建血量條背景 - 往上移動
+        this.healthBarBg = this.add.image(187.5, 90, 'healthBarBgImg');
         this.healthBarBg.setOrigin(0.5);
 
-        // 創建血量條
-        this.healthBar = this.add.image(87.5, 125, 'healthBarImg');
+        // 創建血量條 - 往上移動
+        this.healthBar = this.add.image(87.5, 90, 'healthBarImg');
         this.healthBar.setOrigin(0, 0.5);
 
-        // 創建事件文字框
+        // 創建事件文字框 - 往上移動15像素，與按鈕保持空隙
         const textBoxBg = this.add.graphics();
         textBoxBg.fillStyle(0xffffff, 0.9);
-        textBoxBg.fillRoundedRect(20, 300, 335, 160, 10);
+        textBoxBg.fillRoundedRect(20, 395, 335, 180, 10);
         textBoxBg.lineStyle(3, 0x34495e);
-        textBoxBg.strokeRoundedRect(20, 300, 335, 160, 10);
+        textBoxBg.strokeRoundedRect(20, 395, 335, 180, 10);
 
-        this.eventText = this.add.text(35, 320, '點擊「下一關」開始你的冒險旅程。', {
+        this.eventText = this.add.text(35, 410, '點擊「下一關」開始你的冒險旅程。', {
             fontSize: '14px',
             fill: '#2c3e50',
             wordWrap: { width: 305 },
@@ -323,7 +323,7 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // 創建按鈕容器，移到畫面最下方中央
-        this.nextLevelButton = this.add.container(187.5, 600, [buttonBg, buttonText]);
+        this.nextLevelButton = this.add.container(187.5, 620, [buttonBg, buttonText]);
         
         // 設置按鈕互動 - 簡化設定
         this.nextLevelButton.setSize(200, 60);
@@ -486,7 +486,7 @@ class GameScene extends Phaser.Scene {
         // 更新血量條寬度和填充
         this.healthBar.setScale((healthBarWidth / 200) * healthPercentage, 1);
         
-        // 重新定位血量條（保持居中）
+        // 重新定位血量條（保持居中）- 使用新的Y座標
         const centerX = 187.5;
         this.healthBarBg.x = centerX;
         this.healthBar.x = centerX - (healthBarWidth / 2);
