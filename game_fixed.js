@@ -1,3 +1,41 @@
+// 持久化資料庫系統
+const GameDatabase = {
+    // 儲存金錢到 localStorage
+    saveMoney(amount) {
+        localStorage.setItem('gamePlayerMoney', amount.toString());
+    },
+    
+    // 從 localStorage 讀取金錢
+    loadMoney() {
+        const saved = localStorage.getItem('gamePlayerMoney');
+        return saved ? parseInt(saved) : 0; // 預設為 0 金錢
+    },
+    
+    // 增加金錢
+    addMoney(amount) {
+        const currentMoney = this.loadMoney();
+        const newAmount = currentMoney + amount;
+        this.saveMoney(newAmount);
+        return newAmount;
+    },
+    
+    // 花費金錢
+    spendMoney(amount) {
+        const currentMoney = this.loadMoney();
+        if (currentMoney >= amount) {
+            const newAmount = currentMoney - amount;
+            this.saveMoney(newAmount);
+            return newAmount;
+        }
+        return currentMoney; // 金錢不足時不變
+    },
+    
+    // 重置金錢（調試用）
+    resetMoney() {
+        this.saveMoney(0);
+    }
+};
+
 // 資源路徑
 const ASSETS = {
     images: {
@@ -70,6 +108,22 @@ class StartScene extends Phaser.Scene {
             fontWeight: 'bold',
             stroke: '#ffffff',
             strokeThickness: 3
+        }).setOrigin(0.5);
+
+        // 金錢顯示 - 首頁右上角
+        const currentMoney = GameDatabase.loadMoney();
+        
+        // 創建金錢方框背景 - 完全貼著邊框
+        const moneyBg = this.add.graphics();
+        moneyBg.fillStyle(0x000000, 0.8); // 黑色背景，80%透明度
+        moneyBg.fillRoundedRect(290, 0, 85, 30, 5); // 緊貼右上角
+        moneyBg.lineStyle(2, 0xf39c12); // 金色邊框
+        moneyBg.strokeRoundedRect(290, 0, 85, 30, 5);
+        
+        this.add.text(332.5, 15, `💰 ${currentMoney}`, {
+            fontSize: '14px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
         }).setOrigin(0.5);
 
         // 副標題
@@ -298,6 +352,22 @@ class GameScene extends Phaser.Scene {
         this.healthBar = this.add.image(87.5, 90, 'healthBarImg');
         this.healthBar.setOrigin(0, 0.5);
 
+        // 金錢顯示 - 完全貼著右上角邊框
+        this.playerMoney = GameDatabase.loadMoney();
+        
+        // 創建金錢方框背景 - 完全貼著邊框
+        this.moneyBg = this.add.graphics();
+        this.moneyBg.fillStyle(0x000000, 0.8); // 黑色背景，80%透明度
+        this.moneyBg.fillRoundedRect(290, 0, 85, 30, 5); // 緊貼右上角
+        this.moneyBg.lineStyle(2, 0xf39c12); // 金色邊框
+        this.moneyBg.strokeRoundedRect(290, 0, 85, 30, 5);
+        
+        this.moneyText = this.add.text(332.5, 15, `💰 ${this.playerMoney}`, {
+            fontSize: '14px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
         // 創建事件文字框 - 往上移動15像素，與按鈕保持空隙
         const textBoxBg = this.add.graphics();
         textBoxBg.fillStyle(0xffffff, 0.9);
@@ -380,6 +450,7 @@ class GameScene extends Phaser.Scene {
         // 應用事件效果
         let healthChange = randomEvent.effect.health || 0;
         let maxHealthChange = randomEvent.effect.maxHealth || 0;
+        let moneyGain = randomEvent.effect.money || 0;
         let fullHeal = randomEvent.effect.fullHeal || false;
         let instantDeath = randomEvent.effect.instantDeath || false;
         
@@ -439,6 +510,11 @@ class GameScene extends Phaser.Scene {
             }
         }
         
+        // 處理金錢獲得
+        if (moneyGain > 0) {
+            this.gainMoney(moneyGain);
+        }
+        
         // 更新顯示
         this.updateHealthDisplay();
         
@@ -448,6 +524,10 @@ class GameScene extends Phaser.Scene {
             statusMessage += `✨ 你變得更強壯了！最大血量提升至 ${this.maxHealth} 點！\n`;
         } else if (maxHealthChange < 0) {
             statusMessage += `💀 你感到虛弱...最大血量降低至 ${this.maxHealth} 點。\n`;
+        }
+        
+        if (moneyGain > 0) {
+            statusMessage += `💰 獲得 ${moneyGain} 金錢！總金錢: ${this.playerMoney}\n`;
         }
         
         if (this.playerHealth <= 0) {
@@ -492,6 +572,10 @@ class GameScene extends Phaser.Scene {
         this.healthBar.x = centerX - (healthBarWidth / 2);
         
         this.healthText.setText(`血量: ${this.playerHealth}/${this.maxHealth}`);
+        
+        // 更新金錢顯示
+        this.playerMoney = GameDatabase.loadMoney();
+        this.moneyText.setText(`💰 ${this.playerMoney}`);
         
         // 根據血量改變顏色
         if (healthPercentage > 0.6) {
@@ -552,6 +636,14 @@ class GameScene extends Phaser.Scene {
         if (this.soundEffects[soundName]) {
             this.soundEffects[soundName].play();
         }
+    }
+
+    // 獲得金錢
+    gainMoney(amount) {
+        const newTotal = GameDatabase.addMoney(amount);
+        this.playerMoney = newTotal;
+        this.updateHealthDisplay(); // 更新顯示
+        return amount;
     }
 
     // 將按鈕改為重新開始
