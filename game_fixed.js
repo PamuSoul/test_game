@@ -247,8 +247,8 @@ class GameScene extends Phaser.Scene {
         // 初始化音頻
         this.initializeAudio();
         
-        // 創建玩家 - 往左邊移動，往下一點
-        this.player = this.add.sprite(80, 220, 'playerImg');
+        // 創建玩家 - 移動到左下角紅色方框位置
+        this.player = this.add.sprite(60, 300, 'playerImg');
         
         // 根據圖片載入情況調整縮放
         if (this.textures.exists('playerImg')) {
