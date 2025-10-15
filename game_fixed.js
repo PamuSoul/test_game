@@ -695,6 +695,12 @@ class GameScene extends Phaser.Scene {
         // 隨機選擇事件（使用權重）
         const randomEvent = getRandomEventByWeight();
         
+        // 檢查是否為商店類型事件
+        if (randomEvent.type === "shop") {
+            this.showShopEvent(randomEvent);
+            return;
+        }
+        
         // 更新關卡
         this.currentLevel++;
         
@@ -942,6 +948,258 @@ class GameScene extends Phaser.Scene {
             buttonBg.setFillStyle(0xe74c3c);
             this.nextLevelButton.setScale(1);
         });
+    }
+
+    // 顯示商店事件
+    showShopEvent(event) {
+        // 更新關卡
+        this.currentLevel++;
+        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        
+        // 隱藏原本的下一關按鈕
+        this.nextLevelButton.setVisible(false);
+        
+        // 創建商店介面
+        this.createShopInterface(event);
+    }
+
+    // 創建商店介面
+    createShopInterface(event) {
+        // 隨機選擇要顯示的商品數量（2-3個）
+        const itemCount = Math.floor(Math.random() * 2) + 2; // 2 或 3
+        
+        // 隨機選擇要顯示的商品
+        const shuffledItems = [...event.shopItems].sort(() => Math.random() - 0.5);
+        const selectedItems = shuffledItems.slice(0, itemCount);
+        
+        // 顯示商人描述
+        this.eventText.setText(`${event.description}\n\n商人說：「歡迎光臨！看看我有什麼好東西！」\n💰 你的金錢: ${this.playerMoney}`);
+        
+        // 清理現有的商店按鈕（如果有的話）
+        if (this.shopButtons) {
+            this.shopButtons.forEach(button => button.destroy());
+        }
+        this.shopButtons = [];
+        
+        // 方框大小和位置設定
+        const boxSize = 60;
+        
+        // 根據商品數量調整位置
+        let positions = [];
+        if (selectedItems.length === 2) {
+            positions = [
+                { x: 120, y: 160 },  // 左
+                { x: 240, y: 160 }   // 右
+            ];
+        } else { // 3個商品
+            positions = [
+                { x: 90, y: 160 },   // 左
+                { x: 180, y: 160 },  // 中
+                { x: 270, y: 160 }   // 右
+            ];
+        }
+        
+        // 為每個選中的商品創建方框按鈕
+        selectedItems.forEach((item, index) => {
+            const pos = positions[index];
+            const canAfford = this.playerMoney >= item.price;
+            
+            // 創建方框背景
+            const boxBg = this.add.rectangle(pos.x, pos.y, boxSize, boxSize);
+            boxBg.setFillStyle(canAfford ? 0x2c3e50 : 0x95a5a6);
+            boxBg.setStrokeStyle(3, canAfford ? 0x3498db : 0x7f8c8d);
+            
+            // 創建物品名稱（簡短版本）
+            let shortName = item.name;
+            if (item.name === "治療藥水") shortName = "小藥水";
+            if (item.name === "大型治療藥水") shortName = "大藥水";
+            if (item.name === "生命護符") shortName = "護符";
+            if (item.name === "龍鱗盔甲") shortName = "盔甲";
+            
+            const nameText = this.add.text(pos.x, pos.y - 15, shortName, {
+                fontSize: '9px',
+                fill: canAfford ? '#ffffff' : '#bdc3c7',
+                align: 'center',
+                fontFamily: 'Arial, sans-serif'
+            });
+            nameText.setOrigin(0.5);
+            
+            // 創建價格文字
+            const priceText = this.add.text(pos.x, pos.y + 5, `${item.price}💰`, {
+                fontSize: '9px',
+                fill: canAfford ? '#f1c40f' : '#95a5a6',
+                align: 'center',
+                fontFamily: 'Arial, sans-serif'
+            });
+            priceText.setOrigin(0.5);
+            
+            // 創建效果文字
+            let effectText = "";
+            if (item.effect.health) effectText = `+${item.effect.health}❤️`;
+            if (item.effect.maxHealth) effectText = `+${item.effect.maxHealth}💪`;
+            
+            const effectDisplay = this.add.text(pos.x, pos.y + 18, effectText, {
+                fontSize: '8px',
+                fill: canAfford ? '#27ae60' : '#95a5a6',
+                align: 'center',
+                fontFamily: 'Arial, sans-serif'
+            });
+            effectDisplay.setOrigin(0.5);
+            
+            // 將所有元素加入數組以便管理
+            const buttonElements = [boxBg, nameText, priceText, effectDisplay];
+            this.shopButtons.push(...buttonElements);
+            
+            // 為方框添加互動功能
+            if (canAfford) {
+                boxBg.setInteractive({ useHandCursor: true });
+                
+                boxBg.on('pointerdown', () => {
+                    this.playSound('buttonClick');
+                    this.buyItemAndLeave(item);
+                });
+                
+                boxBg.on('pointerover', () => {
+                    boxBg.setFillStyle(0x34495e);
+                    boxBg.setScale(1.1);
+                });
+                
+                boxBg.on('pointerout', () => {
+                    boxBg.setFillStyle(0x2c3e50);
+                    boxBg.setScale(1);
+                });
+            }
+        });
+        
+        // 添加「什麼都不買」選項 - 在最右邊
+        this.createNothingButton();
+    }
+    
+    // 創建「離開」按鈕
+    createNothingButton() {
+        // 放在大藥水下面的絕對位置
+        const buttonX = 180; // 中間位置（對應大藥水的X座標）
+        const buttonY = 220; // 在商品方框下方
+        
+        const nothingBg = this.add.rectangle(buttonX, buttonY, 60, 30);
+        nothingBg.setFillStyle(0xe74c3c);
+        nothingBg.setStrokeStyle(2, 0xc0392b);
+        
+        const nothingText = this.add.text(buttonX, buttonY, '離開', {
+            fontSize: '12px',
+            fill: '#ffffff',
+            align: 'center',
+            fontFamily: 'Arial, sans-serif'
+        });
+        nothingText.setOrigin(0.5);
+        
+        this.shopButtons.push(nothingBg, nothingText);
+        
+        nothingBg.setInteractive({ useHandCursor: true });
+        
+        nothingBg.on('pointerdown', () => {
+            this.playSound('buttonClick');
+            this.leaveShop();
+        });
+        
+        nothingBg.on('pointerover', () => {
+            nothingBg.setFillStyle(0xc0392b);
+            nothingBg.setScale(1.05);
+        });
+        
+        nothingBg.on('pointerout', () => {
+            nothingBg.setFillStyle(0xe74c3c);
+            nothingBg.setScale(1);
+        });
+    }
+    
+    // 購買物品並離開商店
+    buyItemAndLeave(item) {
+        // 檢查是否有足夠金錢
+        if (this.playerMoney < item.price) {
+            this.eventText.setText(this.eventText.text + '\n\n💸 金錢不足！');
+            return;
+        }
+        
+        // 扣除金錢
+        GameDatabase.spendMoney(item.price);
+        this.playerMoney = GameDatabase.loadMoney();
+        
+        // 播放購買音效
+        this.playSound('eventPositive');
+        
+        // 應用物品效果
+        if (item.effect.health) {
+            this.playerHealth += item.effect.health;
+            this.playerHealth = Math.min(this.maxHealth, this.playerHealth);
+        }
+        
+        if (item.effect.maxHealth) {
+            this.maxHealth += item.effect.maxHealth;
+            this.playSound('levelUp');
+        }
+        
+        // 更新顯示
+        this.updateHealthDisplay();
+        
+        // 清理商店按鈕
+        if (this.shopButtons) {
+            this.shopButtons.forEach(button => button.destroy());
+            this.shopButtons = [];
+        }
+        
+        // 清理提示
+        this.hideItemTooltip();
+        
+        // 顯示購買成功訊息並自動離開
+        this.eventText.setText(
+            `✅ 購買成功！\n\n${item.effect.message}\n\n💰 剩餘金錢: ${this.playerMoney}\n\n商人說：「謝謝惠顧！一路平安！」`
+        );
+        
+        // 恢復下一關按鈕
+        this.nextLevelButton.setVisible(true);
+    }
+    
+    // 創建離開商店按鈕（已移除，改用「什麼都不買」）
+    
+    // 顯示物品提示（簡化版）
+    showItemTooltip(item, x, y) {
+        // 暫時移除提示功能，簡化商店體驗
+    }
+    
+    // 隱藏物品提示
+    hideItemTooltip() {
+        if (this.currentTooltip) {
+            this.currentTooltip.destroy();
+            this.currentTooltip = null;
+        }
+    }
+
+    // 購買物品（舊版本，保留用於其他地方）
+    buyItem(item, shopEvent) {
+        // 這個方法已被 buyItemAndLeave 取代，但保留以防其他地方使用
+        this.buyItemAndLeave(item);
+    }
+
+    // 離開商店
+    leaveShop() {
+        // 播放按鈕音效
+        this.playSound('buttonClick');
+        
+        // 清理商店按鈕
+        if (this.shopButtons) {
+            this.shopButtons.forEach(button => button.destroy());
+            this.shopButtons = [];
+        }
+        
+        // 清理提示
+        this.hideItemTooltip();
+        
+        // 顯示離開訊息
+        this.eventText.setText('你決定不購買任何東西，與商人告別。\n\n商人說：「沒關係！下次有機會再來看看！」');
+        
+        // 恢復下一關按鈕
+        this.nextLevelButton.setVisible(true);
     }
 
     // 重新開始遊戲

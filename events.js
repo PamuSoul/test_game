@@ -26,8 +26,34 @@ const gameEvents = [
     },
     {
         name: "友善商人",
-        description: "一位友善的商人給了你藥水。",
-        effect: { health: 25, message: "恢復 25 點生命值！" },
+        description: "一位友善的商人向你展示他的商品。",
+        type: "shop",  // 標記為商店類型事件
+        shopItems: [
+            {
+                name: "治療藥水",
+                description: "恢復 30 點生命值",
+                price: 15,
+                effect: { health: 30, message: "使用治療藥水恢復 30 點生命值！" }
+            },
+            {
+                name: "大型治療藥水",
+                description: "恢復 50 點生命值",
+                price: 25,
+                effect: { health: 50, message: "使用大型治療藥水恢復 50 點生命值！" }
+            },
+            {
+                name: "生命護符",
+                description: "增加 15 點最大生命值",
+                price: 40,
+                effect: { maxHealth: 15, message: "生命護符增加了 15 點最大生命值！" }
+            },
+            {
+                name: "龍鱗盔甲",
+                description: "增加 25 點最大生命值",
+                price: 60,
+                effect: { maxHealth: 25, message: "龍鱗盔甲增加了 25 點最大生命值！" }
+            }
+        ],
         weight: 10  // 中等機率的正面事件
     },
     {
