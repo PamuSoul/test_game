@@ -171,12 +171,265 @@ class StartScene extends Phaser.Scene {
             });
         });
 
+        // 強化按鈕 (左邊) - 調整位置避免重疊
+        const upgradeButtonBg = this.add.rectangle(0, 0, 130, 50, 0xe74c3c, 1);
+        upgradeButtonBg.setStrokeStyle(3, 0xc0392b);
+        
+        const upgradeButtonText = this.add.text(0, 0, '強化', {
+            fontSize: '18px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const upgradeButton = this.add.container(105, 520, [upgradeButtonBg, upgradeButtonText]);
+        
+        // 設置強化按鈕互動
+        upgradeButton.setSize(130, 50);
+        upgradeButton.setInteractive({ useHandCursor: true });
+        
+        upgradeButton.on('pointerover', () => {
+            upgradeButtonBg.setFillStyle(0xc0392b);
+            upgradeButton.setScale(1.05);
+        });
+
+        upgradeButton.on('pointerout', () => {
+            upgradeButtonBg.setFillStyle(0xe74c3c);
+            upgradeButton.setScale(1);
+        });
+
+        upgradeButton.on('pointerdown', () => {
+            upgradeButton.setScale(0.95);
+            this.time.delayedCall(100, () => {
+                upgradeButton.setScale(1.05);
+                // 切換到強化場景
+                this.scene.start('UpgradeScene');
+            });
+        });
+
+        // 裝備按鈕 (右邊) - 調整位置避免重疊
+        const equipButtonBg = this.add.rectangle(0, 0, 130, 50, 0x8e44ad, 1);
+        equipButtonBg.setStrokeStyle(3, 0x6c3483);
+        
+        const equipButtonText = this.add.text(0, 0, '裝備', {
+            fontSize: '18px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const equipButton = this.add.container(270, 520, [equipButtonBg, equipButtonText]);
+        
+        // 設置裝備按鈕互動
+        equipButton.setSize(130, 50);
+        equipButton.setInteractive({ useHandCursor: true });
+        
+        equipButton.on('pointerover', () => {
+            equipButtonBg.setFillStyle(0x6c3483);
+            equipButton.setScale(1.05);
+        });
+
+        equipButton.on('pointerout', () => {
+            equipButtonBg.setFillStyle(0x8e44ad);
+            equipButton.setScale(1);
+        });
+
+        equipButton.on('pointerdown', () => {
+            equipButton.setScale(0.95);
+            this.time.delayedCall(100, () => {
+                equipButton.setScale(1.05);
+                // 裝備功能暫未實裝
+                console.log('裝備功能暫未實裝');
+            });
+        });
+
         // 版權信息
         this.add.text(187.5, 580, 'Made with Phaser 3', {
             fontSize: '12px',
             fill: '#7f8c8d',
             fontStyle: 'italic'
         }).setOrigin(0.5);
+    }
+}
+
+// 強化場景
+class UpgradeScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'UpgradeScene' });
+    }
+
+    create() {
+        // 添加背景圖片
+        if (this.textures.exists('backgroundImg')) {
+            const bg = this.add.image(187.5, 333.5, 'backgroundImg');
+            bg.setOrigin(0.5);
+            
+            const bgTexture = this.textures.get('backgroundImg');
+            const bgWidth = bgTexture.source[0].width;
+            const bgHeight = bgTexture.source[0].height;
+            
+            const scaleX = 375 / bgWidth;
+            const scaleY = 667 / bgHeight;
+            const bgScale = Math.max(scaleX, scaleY);
+            
+            bg.setScale(bgScale);
+        }
+
+        // 金錢顯示 - 右上角
+        this.currentMoney = GameDatabase.loadMoney();
+        
+        const moneyBg = this.add.graphics();
+        moneyBg.fillStyle(0x000000, 0.8);
+        moneyBg.fillRoundedRect(290, 0, 85, 30, 5);
+        moneyBg.lineStyle(2, 0xf39c12);
+        moneyBg.strokeRoundedRect(290, 0, 85, 30, 5);
+        
+        this.moneyText = this.add.text(332.5, 15, `💰 ${this.currentMoney}`, {
+            fontSize: '14px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 標題
+        this.add.text(187.5, 80, '強化中心', {
+            fontSize: '32px',
+            fill: '#2c3e50',
+            fontWeight: 'bold',
+            stroke: '#ffffff',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        // 強化選項背景
+        const upgradeBg = this.add.graphics();
+        upgradeBg.fillStyle(0xffffff, 0.9);
+        upgradeBg.fillRoundedRect(30, 150, 315, 400, 15);
+        upgradeBg.lineStyle(4, 0x34495e);
+        upgradeBg.strokeRoundedRect(30, 150, 315, 400, 15);
+
+        // 生命值強化選項
+        const healthUpgradeCost = this.getHealthUpgradeCost();
+        
+        this.add.text(50, 180, '💪 生命值強化', {
+            fontSize: '20px',
+            fill: '#e74c3c',
+            fontWeight: 'bold'
+        });
+
+        this.add.text(50, 210, `提升最大生命值 +10`, {
+            fontSize: '14px',
+            fill: '#2c3e50'
+        });
+
+        this.add.text(50, 230, `費用: ${healthUpgradeCost} 金錢`, {
+            fontSize: '14px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
+        });
+
+        // 強化按鈕
+        const buyButtonBg = this.add.rectangle(0, 0, 120, 40, 0x27ae60, 1);
+        buyButtonBg.setStrokeStyle(2, 0x1e8449);
+        
+        const buyButtonText = this.add.text(0, 0, '購買', {
+            fontSize: '16px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        this.buyButton = this.add.container(280, 225, [buyButtonBg, buyButtonText]);
+        this.buyButton.setSize(120, 40);
+        this.buyButton.setInteractive({ useHandCursor: true });
+
+        // 檢查是否有足夠金錢
+        if (this.currentMoney < healthUpgradeCost) {
+            buyButtonBg.setFillStyle(0x7f8c8d);
+            buyButtonText.setText('金錢不足');
+            this.buyButton.removeInteractive();
+        } else {
+            this.buyButton.on('pointerover', () => {
+                buyButtonBg.setFillStyle(0x1e8449);
+                this.buyButton.setScale(1.05);
+            });
+
+            this.buyButton.on('pointerout', () => {
+                buyButtonBg.setFillStyle(0x27ae60);
+                this.buyButton.setScale(1);
+            });
+
+            this.buyButton.on('pointerdown', () => {
+                this.buyButton.setScale(0.95);
+                this.time.delayedCall(100, () => {
+                    this.buyButton.setScale(1);
+                    this.purchaseHealthUpgrade();
+                });
+            });
+        }
+
+        // 返回按鈕
+        const backButtonBg = this.add.rectangle(0, 0, 100, 40, 0x95a5a6, 1);
+        backButtonBg.setStrokeStyle(2, 0x7f8c8d);
+        
+        const backButtonText = this.add.text(0, 0, '返回', {
+            fontSize: '16px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const backButton = this.add.container(187.5, 600, [backButtonBg, backButtonText]);
+        backButton.setSize(100, 40);
+        backButton.setInteractive({ useHandCursor: true });
+        
+        backButton.on('pointerover', () => {
+            backButtonBg.setFillStyle(0x7f8c8d);
+            backButton.setScale(1.05);
+        });
+
+        backButton.on('pointerout', () => {
+            backButtonBg.setFillStyle(0x95a5a6);
+            backButton.setScale(1);
+        });
+
+        backButton.on('pointerdown', () => {
+            backButton.setScale(0.95);
+            this.time.delayedCall(100, () => {
+                backButton.setScale(1);
+                this.scene.start('StartScene');
+            });
+        });
+    }
+
+    getHealthUpgradeCost() {
+        // 每次強化費用遞增 (基礎費用50，每次+25)
+        const upgradeCount = localStorage.getItem('healthUpgrades') || 0;
+        return 50 + (parseInt(upgradeCount) * 25);
+    }
+
+    purchaseHealthUpgrade() {
+        const cost = this.getHealthUpgradeCost();
+        const newMoney = GameDatabase.spendMoney(cost);
+        
+        if (newMoney !== this.currentMoney) {
+            // 購買成功
+            const currentUpgrades = parseInt(localStorage.getItem('healthUpgrades') || 0);
+            localStorage.setItem('healthUpgrades', (currentUpgrades + 1).toString());
+            
+            // 提升基礎最大生命值
+            const currentBaseHealth = parseInt(localStorage.getItem('baseMaxHealth') || 100);
+            localStorage.setItem('baseMaxHealth', (currentBaseHealth + 10).toString());
+            
+            // 顯示購買成功訊息
+            const successText = this.add.text(187.5, 320, '✅ 購買成功！\n最大生命值 +10', {
+                fontSize: '18px',
+                fill: '#27ae60',
+                fontWeight: 'bold',
+                align: 'center',
+                stroke: '#ffffff',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+            
+            // 2秒後移除訊息並重新載入場景
+            this.time.delayedCall(2000, () => {
+                this.scene.restart();
+            });
+        }
     }
 }
 
@@ -187,9 +440,10 @@ class GameScene extends Phaser.Scene {
     }
 
     init() {
-        // 每次進入場景時重置遊戲變數
-        this.playerHealth = 100;
-        this.maxHealth = 100;
+        // 每次進入場景時重置遊戲變數，但使用升級後的基礎生命值
+        const baseMaxHealth = parseInt(localStorage.getItem('baseMaxHealth') || 100);
+        this.playerHealth = baseMaxHealth;
+        this.maxHealth = baseMaxHealth;
         this.currentLevel = 1;
     }
 
@@ -715,7 +969,7 @@ const config = {
         width: 375,
         height: 667
     },
-    scene: [StartScene, GameScene]
+    scene: [StartScene, UpgradeScene, GameScene]
 };
 
 // 啟動遊戲
