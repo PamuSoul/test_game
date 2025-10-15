@@ -33,6 +33,40 @@ const GameDatabase = {
     // 重置金錢（調試用）
     resetMoney() {
         this.saveMoney(0);
+    },
+    
+    // === 攻擊力系統 ===
+    saveAttack(amount) {
+        localStorage.setItem('playerAttack', amount.toString());
+    },
+    
+    loadAttack() {
+        const saved = localStorage.getItem('playerAttack');
+        return saved ? parseInt(saved) : 10; // 預設攻擊力 10
+    },
+    
+    upgradeAttack(amount) {
+        const currentAttack = this.loadAttack();
+        const newAttack = currentAttack + amount;
+        this.saveAttack(newAttack);
+        return newAttack;
+    },
+    
+    // === 防禦力系統 ===
+    saveDefense(amount) {
+        localStorage.setItem('playerDefense', amount.toString());
+    },
+    
+    loadDefense() {
+        const saved = localStorage.getItem('playerDefense');
+        return saved ? parseInt(saved) : 5; // 預設防禦力 5
+    },
+    
+    upgradeDefense(amount) {
+        const currentDefense = this.loadDefense();
+        const newDefense = currentDefense + amount;
+        this.saveDefense(newDefense);
+        return newDefense;
     }
 };
 
@@ -273,17 +307,17 @@ class UpgradeScene extends Phaser.Scene {
             bg.setScale(bgScale);
         }
 
-        // 金錢顯示 - 右上角
+        // 金錢顯示 - 右上角，與遊戲場景一致的位置
         this.currentMoney = GameDatabase.loadMoney();
         
         const moneyBg = this.add.graphics();
         moneyBg.fillStyle(0x000000, 0.8);
-        moneyBg.fillRoundedRect(290, 0, 85, 30, 5);
+        moneyBg.fillRoundedRect(320, 0, 55, 25, 5);
         moneyBg.lineStyle(2, 0xf39c12);
-        moneyBg.strokeRoundedRect(290, 0, 85, 30, 5);
+        moneyBg.strokeRoundedRect(320, 0, 55, 25, 5);
         
-        this.moneyText = this.add.text(332.5, 15, `💰 ${this.currentMoney}`, {
-            fontSize: '14px',
+        this.moneyText = this.add.text(347.5, 12.5, `💰 ${this.currentMoney}`, {
+            fontSize: '11px',
             fill: '#f39c12',
             fontWeight: 'bold'
         }).setOrigin(0.5);
@@ -304,66 +338,135 @@ class UpgradeScene extends Phaser.Scene {
         upgradeBg.lineStyle(4, 0x34495e);
         upgradeBg.strokeRoundedRect(30, 150, 315, 400, 15);
 
-        // 生命值強化選項
-        const healthUpgradeCost = this.getHealthUpgradeCost();
+        // 創建三個強化選項
+        this.createHealthUpgrade();
+        this.createAttackUpgrade();
+        this.createDefenseUpgrade();
+
+        // 返回按鈕
+        this.createBackButton();
+    }
+
+    // 生命值強化選項
+    createHealthUpgrade() {
+        const cost = this.getHealthUpgradeCost();
+        const yPos = 180;
         
-        this.add.text(50, 180, '💪 生命值強化', {
-            fontSize: '20px',
+        this.add.text(50, yPos, '💪 生命值強化', {
+            fontSize: '18px',
             fill: '#e74c3c',
             fontWeight: 'bold'
         });
 
-        this.add.text(50, 210, `提升最大生命值 +10`, {
-            fontSize: '14px',
+        this.add.text(50, yPos + 25, `提升最大生命值 +10`, {
+            fontSize: '13px',
             fill: '#2c3e50'
         });
 
-        this.add.text(50, 230, `費用: ${healthUpgradeCost} 金錢`, {
-            fontSize: '14px',
+        this.add.text(50, yPos + 45, `費用: ${cost} 金錢`, {
+            fontSize: '13px',
             fill: '#f39c12',
             fontWeight: 'bold'
         });
 
-        // 強化按鈕
-        const buyButtonBg = this.add.rectangle(0, 0, 120, 40, 0x27ae60, 1);
+        this.createUpgradeButton(280, yPos + 30, cost, () => this.purchaseHealthUpgrade());
+    }
+
+    // 攻擊力強化選項
+    createAttackUpgrade() {
+        const cost = this.getAttackUpgradeCost();
+        const yPos = 260;
+        
+        this.add.text(50, yPos, '⚔️ 攻擊力強化', {
+            fontSize: '18px',
+            fill: '#e74c3c',
+            fontWeight: 'bold'
+        });
+
+        this.add.text(50, yPos + 25, `提升攻擊力 +3`, {
+            fontSize: '13px',
+            fill: '#2c3e50'
+        });
+
+        this.add.text(50, yPos + 45, `費用: ${cost} 金錢`, {
+            fontSize: '13px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
+        });
+
+        this.createUpgradeButton(280, yPos + 30, cost, () => this.purchaseAttackUpgrade());
+    }
+
+    // 防禦力強化選項
+    createDefenseUpgrade() {
+        const cost = this.getDefenseUpgradeCost();
+        const yPos = 340;
+        
+        this.add.text(50, yPos, '🛡️ 防禦力強化', {
+            fontSize: '18px',
+            fill: '#3498db',
+            fontWeight: 'bold'
+        });
+
+        this.add.text(50, yPos + 25, `提升防禦力 +2`, {
+            fontSize: '13px',
+            fill: '#2c3e50'
+        });
+
+        this.add.text(50, yPos + 45, `費用: ${cost} 金錢`, {
+            fontSize: '13px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
+        });
+
+        this.createUpgradeButton(280, yPos + 30, cost, () => this.purchaseDefenseUpgrade());
+    }
+
+    // 創建升級按鈕
+    createUpgradeButton(x, y, cost, callback) {
+        const buyButtonBg = this.add.rectangle(0, 0, 80, 35, 0x27ae60, 1);
         buyButtonBg.setStrokeStyle(2, 0x1e8449);
         
         const buyButtonText = this.add.text(0, 0, '購買', {
-            fontSize: '16px',
+            fontSize: '14px',
             fill: '#ffffff',
             fontWeight: 'bold'
         }).setOrigin(0.5);
 
-        this.buyButton = this.add.container(280, 225, [buyButtonBg, buyButtonText]);
-        this.buyButton.setSize(120, 40);
-        this.buyButton.setInteractive({ useHandCursor: true });
+        const buyButton = this.add.container(x, y, [buyButtonBg, buyButtonText]);
+        buyButton.setSize(80, 35);
+        buyButton.setInteractive({ useHandCursor: true });
 
         // 檢查是否有足夠金錢
-        if (this.currentMoney < healthUpgradeCost) {
+        if (this.currentMoney < cost) {
             buyButtonBg.setFillStyle(0x7f8c8d);
             buyButtonText.setText('金錢不足');
-            this.buyButton.removeInteractive();
+            buyButton.removeInteractive();
         } else {
-            this.buyButton.on('pointerover', () => {
+            buyButton.on('pointerover', () => {
                 buyButtonBg.setFillStyle(0x1e8449);
-                this.buyButton.setScale(1.05);
+                buyButton.setScale(1.05);
             });
 
-            this.buyButton.on('pointerout', () => {
+            buyButton.on('pointerout', () => {
                 buyButtonBg.setFillStyle(0x27ae60);
-                this.buyButton.setScale(1);
+                buyButton.setScale(1);
             });
 
-            this.buyButton.on('pointerdown', () => {
-                this.buyButton.setScale(0.95);
+            buyButton.on('pointerdown', () => {
+                buyButton.setScale(0.95);
                 this.time.delayedCall(100, () => {
-                    this.buyButton.setScale(1);
-                    this.purchaseHealthUpgrade();
+                    buyButton.setScale(1);
+                    callback();
                 });
             });
         }
 
-        // 返回按鈕
+        return buyButton;
+    }
+
+    // 創建返回按鈕
+    createBackButton() {
         const backButtonBg = this.add.rectangle(0, 0, 100, 40, 0x95a5a6, 1);
         backButtonBg.setStrokeStyle(2, 0x7f8c8d);
         
@@ -373,7 +476,7 @@ class UpgradeScene extends Phaser.Scene {
             fontWeight: 'bold'
         }).setOrigin(0.5);
 
-        const backButton = this.add.container(187.5, 600, [backButtonBg, backButtonText]);
+        const backButton = this.add.container(187.5, 580, [backButtonBg, backButtonText]);
         backButton.setSize(100, 40);
         backButton.setInteractive({ useHandCursor: true });
         
@@ -416,8 +519,78 @@ class UpgradeScene extends Phaser.Scene {
             localStorage.setItem('baseMaxHealth', (currentBaseHealth + 10).toString());
             
             // 顯示購買成功訊息
-            const successText = this.add.text(187.5, 320, '✅ 購買成功！\n最大生命值 +10', {
-                fontSize: '18px',
+            const successText = this.add.text(187.5, 450, '✅ 購買成功！\n最大生命值 +10', {
+                fontSize: '16px',
+                fill: '#27ae60',
+                fontWeight: 'bold',
+                align: 'center',
+                stroke: '#ffffff',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+            
+            // 2秒後移除訊息並重新載入場景
+            this.time.delayedCall(2000, () => {
+                this.scene.restart();
+            });
+        }
+    }
+
+    getAttackUpgradeCost() {
+        // 攻擊力強化費用 (基礎費用30，每次+20)
+        const upgradeCount = localStorage.getItem('attackUpgrades') || 0;
+        return 30 + (parseInt(upgradeCount) * 20);
+    }
+
+    purchaseAttackUpgrade() {
+        const cost = this.getAttackUpgradeCost();
+        const newMoney = GameDatabase.spendMoney(cost);
+        
+        if (newMoney !== this.currentMoney) {
+            // 購買成功
+            const currentUpgrades = parseInt(localStorage.getItem('attackUpgrades') || 0);
+            localStorage.setItem('attackUpgrades', (currentUpgrades + 1).toString());
+            
+            // 提升攻擊力
+            GameDatabase.upgradeAttack(3);
+            
+            // 顯示購買成功訊息
+            const successText = this.add.text(187.5, 450, '✅ 購買成功！\n攻擊力 +3', {
+                fontSize: '16px',
+                fill: '#27ae60',
+                fontWeight: 'bold',
+                align: 'center',
+                stroke: '#ffffff',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+            
+            // 2秒後移除訊息並重新載入場景
+            this.time.delayedCall(2000, () => {
+                this.scene.restart();
+            });
+        }
+    }
+
+    getDefenseUpgradeCost() {
+        // 防禦力強化費用 (基礎費用40，每次+25)
+        const upgradeCount = localStorage.getItem('defenseUpgrades') || 0;
+        return 40 + (parseInt(upgradeCount) * 25);
+    }
+
+    purchaseDefenseUpgrade() {
+        const cost = this.getDefenseUpgradeCost();
+        const newMoney = GameDatabase.spendMoney(cost);
+        
+        if (newMoney !== this.currentMoney) {
+            // 購買成功
+            const currentUpgrades = parseInt(localStorage.getItem('defenseUpgrades') || 0);
+            localStorage.setItem('defenseUpgrades', (currentUpgrades + 1).toString());
+            
+            // 提升防禦力
+            GameDatabase.upgradeDefense(2);
+            
+            // 顯示購買成功訊息
+            const successText = this.add.text(187.5, 450, '✅ 購買成功！\n防禦力 +2', {
+                fontSize: '16px',
                 fill: '#27ae60',
                 fontWeight: 'bold',
                 align: 'center',
@@ -445,6 +618,10 @@ class GameScene extends Phaser.Scene {
         this.playerHealth = baseMaxHealth;
         this.maxHealth = baseMaxHealth;
         this.currentLevel = 1;
+        
+        // 初始化攻擊力和防禦力（從GameDatabase載入）
+        this.playerAttack = GameDatabase.loadAttack();
+        this.playerDefense = GameDatabase.loadDefense();
     }
 
     preload() {
@@ -606,18 +783,43 @@ class GameScene extends Phaser.Scene {
         this.healthBar = this.add.image(87.5, 90, 'healthBarImg');
         this.healthBar.setOrigin(0, 0.5);
 
-        // 金錢顯示 - 完全貼著右上角邊框
+        // 攻擊力顯示方框 - 右上角最左邊，貼著頂部
+        this.attackBg = this.add.graphics();
+        this.attackBg.fillStyle(0x000000, 0.8);
+        this.attackBg.fillRoundedRect(190, 0, 60, 25, 5);
+        this.attackBg.lineStyle(2, 0xe74c3c); // 紅色邊框
+        this.attackBg.strokeRoundedRect(190, 0, 60, 25, 5);
+        
+        this.attackText = this.add.text(220, 12.5, `⚔️ ${this.playerAttack}`, {
+            fontSize: '11px',
+            fill: '#e74c3c',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 防禦力顯示方框 - 攻擊力右邊，貼著頂部
+        this.defenseBg = this.add.graphics();
+        this.defenseBg.fillStyle(0x000000, 0.8);
+        this.defenseBg.fillRoundedRect(255, 0, 60, 25, 5);
+        this.defenseBg.lineStyle(2, 0x3498db); // 藍色邊框
+        this.defenseBg.strokeRoundedRect(255, 0, 60, 25, 5);
+        
+        this.defenseText = this.add.text(285, 12.5, `🛡️ ${this.playerDefense}`, {
+            fontSize: '11px',
+            fill: '#3498db',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 金錢顯示方框 - 防禦力右邊，貼著頂部
         this.playerMoney = GameDatabase.loadMoney();
         
-        // 創建金錢方框背景 - 完全貼著邊框
         this.moneyBg = this.add.graphics();
         this.moneyBg.fillStyle(0x000000, 0.8); // 黑色背景，80%透明度
-        this.moneyBg.fillRoundedRect(290, 0, 85, 30, 5); // 緊貼右上角
+        this.moneyBg.fillRoundedRect(320, 0, 55, 25, 5); // 最右邊
         this.moneyBg.lineStyle(2, 0xf39c12); // 金色邊框
-        this.moneyBg.strokeRoundedRect(290, 0, 85, 30, 5);
+        this.moneyBg.strokeRoundedRect(320, 0, 55, 25, 5);
         
-        this.moneyText = this.add.text(332.5, 15, `💰 ${this.playerMoney}`, {
-            fontSize: '14px',
+        this.moneyText = this.add.text(347.5, 12.5, `� ${this.playerMoney}`, {
+            fontSize: '11px',
             fill: '#f39c12',
             fontWeight: 'bold'
         }).setOrigin(0.5);
@@ -837,6 +1039,10 @@ class GameScene extends Phaser.Scene {
         this.playerMoney = GameDatabase.loadMoney();
         this.moneyText.setText(`💰 ${this.playerMoney}`);
         
+        // 更新攻擊力和防禦力顯示
+        this.attackText.setText(`⚔️ ${this.playerAttack}`);
+        this.defenseText.setText(`🛡️ ${this.playerDefense}`);
+        
         // 根據血量改變顏色
         if (healthPercentage > 0.6) {
             this.healthBar.setTint(0x27ae60); // 綠色
@@ -1037,6 +1243,8 @@ class GameScene extends Phaser.Scene {
             let effectText = "";
             if (item.effect.health) effectText = `+${item.effect.health}❤️`;
             if (item.effect.maxHealth) effectText = `+${item.effect.maxHealth}💪`;
+            if (item.effect.attack) effectText = `+${item.effect.attack}⚔️`;
+            if (item.effect.defense) effectText = `+${item.effect.defense}🛡️`;
             
             const effectDisplay = this.add.text(pos.x, pos.y + 18, effectText, {
                 fontSize: '8px',
@@ -1134,9 +1342,23 @@ class GameScene extends Phaser.Scene {
             this.playerHealth = Math.min(this.maxHealth, this.playerHealth);
         }
         
+        // 處理最大血量提升（臨時的，不儲存到localStorage）
         if (item.effect.maxHealth) {
             this.maxHealth += item.effect.maxHealth;
             this.playSound('levelUp');
+            // 注意：不更新 localStorage 中的 baseMaxHealth，只是當局有效
+        }
+        
+        // 處理攻擊力提升（臨時的，不儲存到永久資料庫）
+        if (item.effect.attack) {
+            this.playerAttack += item.effect.attack;
+            // 注意：不調用 GameDatabase.saveAttack()，只是當局有效
+        }
+        
+        // 處理防禦力提升（臨時的，不儲存到永久資料庫）
+        if (item.effect.defense) {
+            this.playerDefense += item.effect.defense;
+            // 注意：不調用 GameDatabase.saveDefense()，只是當局有效
         }
         
         // 更新顯示
@@ -1152,8 +1374,13 @@ class GameScene extends Phaser.Scene {
         this.hideItemTooltip();
         
         // 顯示購買成功訊息並自動離開
+        let tempMessage = "";
+        if (item.effect.attack || item.effect.defense || item.effect.maxHealth) {
+            tempMessage = "\n⚠️ 此提升僅在本局遊戲有效";
+        }
+        
         this.eventText.setText(
-            `✅ 購買成功！\n\n${item.effect.message}\n\n💰 剩餘金錢: ${this.playerMoney}\n\n商人說：「謝謝惠顧！一路平安！」`
+            `✅ 購買成功！\n\n${item.effect.message}${tempMessage}\n\n💰 剩餘金錢: ${this.playerMoney}\n\n商人說：「謝謝惠顧！一路平安！」`
         );
         
         // 恢復下一關按鈕

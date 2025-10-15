@@ -43,15 +43,27 @@ const gameEvents = [
             },
             {
                 name: "生命護符",
-                description: "增加 15 點最大生命值",
+                description: "臨時增加 15 點最大生命值",
                 price: 40,
-                effect: { maxHealth: 15, message: "生命護符增加了 15 點最大生命值！" }
+                effect: { maxHealth: 15, message: "生命護符臨時增加了 15 點最大生命值！" }
             },
             {
                 name: "龍鱗盔甲",
-                description: "增加 25 點最大生命值",
+                description: "臨時增加 25 點最大生命值",
                 price: 60,
-                effect: { maxHealth: 25, message: "龍鱗盔甲增加了 25 點最大生命值！" }
+                effect: { maxHealth: 25, message: "龍鱗盔甲臨時增加了 25 點最大生命值！" }
+            },
+            {
+                name: "銳利武器",
+                description: "臨時增加 2 點攻擊力",
+                price: 35,
+                effect: { attack: 2, message: "銳利武器臨時增加了 2 點攻擊力！" }
+            },
+            {
+                name: "守護盾牌",
+                description: "臨時增加 2 點防禦力",
+                price: 35,
+                effect: { defense: 2, message: "守護盾牌臨時增加了 2 點防禦力！" }
             }
         ],
         weight: 10  // 中等機率的正面事件
