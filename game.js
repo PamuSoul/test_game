@@ -77,7 +77,18 @@ function preload() {
     
     // 載入完成後創建備用圖形
     this.load.on('complete', () => {
+        console.log('資源載入完成');
         createFallbackGraphics.call(this);
+    });
+    
+    // 載入進度
+    this.load.on('progress', (progress) => {
+        console.log('載入進度:', Math.round(progress * 100) + '%');
+    });
+    
+    // 檔案載入成功
+    this.load.on('filecomplete', (key, type, data) => {
+        console.log('檔案載入成功:', key, type);
     });
 }
 
@@ -103,42 +114,77 @@ function createFallbackGraphics() {
     if (!this.textures.exists('healthBarBgImg')) {
         this.add.graphics()
             .fillStyle(0xe74c3c)
-            .fillRect(0, 0, 250, 25)
-            .generateTexture('healthBarBgImg', 250, 25);
+            .fillRect(0, 0, 200, 15)
+            .generateTexture('healthBarBgImg', 200, 15);
     }
     
     // 檢查血量條
     if (!this.textures.exists('healthBarImg')) {
         this.add.graphics()
             .fillStyle(0x27ae60)
-            .fillRect(0, 0, 250, 25)
-            .generateTexture('healthBarImg', 250, 25);
+            .fillRect(0, 0, 200, 15)
+            .generateTexture('healthBarImg', 200, 15);
     }
     
     // 創建可變寬度的血量條材質（用於最大血量變化）
     this.add.graphics()
         .fillStyle(0xe74c3c)
-        .fillRect(0, 0, 300, 25)
-        .generateTexture('healthBarBgLarge', 300, 25);
+        .fillRect(0, 0, 240, 15)
+        .generateTexture('healthBarBgLarge', 240, 15);
     
     this.add.graphics()
         .fillStyle(0x27ae60)
-        .fillRect(0, 0, 300, 25)
-        .generateTexture('healthBarLarge', 300, 25);
+        .fillRect(0, 0, 240, 15)
+        .generateTexture('healthBarLarge', 240, 15);
 }
 
 function create() {
     // 添加背景圖片
     if (this.textures.exists('backgroundImg')) {
-        this.add.image(187.5, 333.5, 'backgroundImg').setOrigin(0.5);
+        const bg = this.add.image(187.5, 333.5, 'backgroundImg');
+        bg.setOrigin(0.5);
+        
+        // 確保背景圖片適合螢幕尺寸
+        const bgTexture = this.textures.get('backgroundImg');
+        const bgWidth = bgTexture.source[0].width;
+        const bgHeight = bgTexture.source[0].height;
+        
+        const scaleX = 375 / bgWidth;
+        const scaleY = 667 / bgHeight;
+        const bgScale = Math.max(scaleX, scaleY); // 填滿螢幕
+        
+        bg.setScale(bgScale);
+        console.log(`背景圖片載入成功！原始尺寸: ${bgWidth}x${bgHeight}, 縮放比例: ${bgScale}`);
+    } else {
+        console.log('沒有背景圖片，使用預設背景色');
     }
     
     // 初始化音頻
     initializeAudio.call(this);
     
     // 創建玩家
-    player = this.add.sprite(187.5, 180, 'playerImg');
-    player.setScale(1.2);
+    player = this.add.sprite(90, 210, 'playerImg');
+    
+    // 根據圖片載入情況調整縮放
+    if (this.textures.exists('playerImg')) {
+        // 如果有自訂玩家圖片，設定適當的大小
+        const playerTexture = this.textures.get('playerImg');
+        const originalWidth = playerTexture.source[0].width;
+        const originalHeight = playerTexture.source[0].height;
+        
+        // 計算適當的縮放比例（目標大小約 80x80）
+        const targetSize = 80;
+        const scaleX = targetSize / originalWidth;
+        const scaleY = targetSize / originalHeight;
+        const scale = Math.min(scaleX, scaleY); // 保持比例
+        
+        player.setScale(scale);
+        console.log(`玩家圖片載入成功！原始尺寸: ${originalWidth}x${originalHeight}, 縮放比例: ${scale}`);
+    } else {
+        // 使用預設圖形
+        player.setScale(1.2);
+        console.log('使用預設玩家圖形');
+    }
 
     // 關卡顯示 - 使用變數來動態更新
     levelText = this.add.text(187.5, 50, `第 ${currentLevel} 關`, {
@@ -150,31 +196,22 @@ function create() {
     });
     levelText.setOrigin(0.5);
 
+    // 血量文字
+    healthText = this.add.text(187.5, 75, `血量: ${playerHealth}/${maxHealth}`, {
+        fontSize: '14px',
+        fill: '#2c3e50',
+        fontWeight: 'bold',
+        stroke: '#ffffff',
+        strokeThickness: 1
+    }).setOrigin(0.5);
+
     // 創建血量條背景
-    healthBarBg = this.add.image(187.5, 120, 'healthBarBgImg');
+    healthBarBg = this.add.image(187.5, 90, 'healthBarBgImg');
     healthBarBg.setOrigin(0.5);
 
     // 創建血量條
-    healthBar = this.add.image(62.5, 120, 'healthBarImg');
+    healthBar = this.add.image(87.5, 90, 'healthBarImg');
     healthBar.setOrigin(0, 0.5);
-
-    // 血量文字
-    healthText = this.add.text(187.5, 145, `血量: ${playerHealth}/${maxHealth}`, {
-        fontSize: '16px',
-        fill: '#2c3e50',
-        fontWeight: 'bold',
-        stroke: '#ffffff',
-        strokeThickness: 1
-    }).setOrigin(0.5);
-
-    // 玩家說明
-    this.add.text(187.5, 240, '玩家', {
-        fontSize: '16px',
-        fill: '#2c3e50',
-        fontWeight: 'bold',
-        stroke: '#ffffff',
-        strokeThickness: 1
-    }).setOrigin(0.5);
 
     // 創建事件文字框
     const textBoxBg = this.add.graphics();
@@ -354,15 +391,15 @@ function updateHealthDisplay() {
     const healthPercentage = playerHealth / maxHealth;
     
     // 根據最大血量調整血量條寬度
-    const baseWidth = 250;
-    const maxWidth = 300;
+    const baseWidth = 200;
+    const maxWidth = 240;
     const healthBarWidth = Math.min(maxWidth, baseWidth * (maxHealth / 100));
     
     // 更新血量條背景寬度
-    healthBarBg.setScale(healthBarWidth / 250, 1);
+    healthBarBg.setScale(healthBarWidth / 200, 1);
     
     // 更新血量條寬度和填充
-    healthBar.setScale((healthBarWidth / 250) * healthPercentage, 1);
+    healthBar.setScale((healthBarWidth / 200) * healthPercentage, 1);
     
     // 重新定位血量條（保持居中）
     const centerX = 187.5;
