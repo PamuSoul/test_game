@@ -8,8 +8,17 @@ const gameEvents = [
     },
     {
         name: "遭遇怪物",
-        description: "一隻凶猛的怪物突然出現！你與它戰鬥後獲得勝利。",
-        effect: { health: -30, money: 15, message: "失去 30 點生命值！獲得 15 金錢！" },
+        description: "一隻凶猛的怪物突然出現！準備戰鬥！",
+        type: "battle",  // 標記為戰鬥類型事件
+        monster: {
+            name: "野狼",
+            health: 80,
+            maxHealth: 80,
+            attack: 8,
+            defense: 3,
+            reward: { money: 15, message: "擊敗野狼獲得 15 金錢！" },
+            escapeMessage: "野狼逃跑了！沒有獲得任何獎勵。"
+        },
         weight: 12  // 較常見的負面事件
     },
     {
@@ -83,7 +92,16 @@ const gameEvents = [
     {
         name: "詛咒石碑",
         description: "你觸碰了一個古老的詛咒石碑，召喚出邪惡守護者！",
-        effect: { health: -25, money: 12, message: "失去 25 點生命值！擊敗守護者獲得 12 金錢！" },
+        type: "battle",
+        monster: {
+            name: "石碑守護者",
+            health: 70,
+            maxHealth: 70,
+            attack: 12,
+            defense: 5,
+            reward: { money: 12, message: "擊敗石碑守護者獲得 12 金錢！" },
+            escapeMessage: "石碑守護者消失在迷霧中！沒有獲得任何獎勵。"
+        },
         weight: 9   // 中等機率的負面事件
     },
     {
@@ -124,20 +142,47 @@ const gameEvents = [
     },
     {
         name: "盜賊襲擊",
-        description: "一群盜賊企圖搶劫你！你成功反擊。",
-        effect: { health: -20, money: 25, message: "失去 20 點生命值！獲得盜賊的 25 金錢！" },
+        description: "一群盜賊企圖搶劫你！準備戰鬥！",
+        type: "battle",
+        monster: {
+            name: "盜賊頭目",
+            health: 90,
+            maxHealth: 90,
+            attack: 10,
+            defense: 2,
+            reward: { money: 25, message: "擊敗盜賊頭目獲得 25 金錢！" },
+            escapeMessage: "盜賊們四散逃跑！沒有獲得任何獎勵。"
+        },
         weight: 8   // 中等機率的敵人事件
     },
     {
         name: "野狼群",
-        description: "一群飢餓的野狼圍攻你！激戰後你成功逃脫。",
-        effect: { health: -35, money: 10, message: "失去 35 點生命值！獲得 10 金錢！" },
+        description: "一群飢餓的野狼圍攻你！準備迎戰狼王！",
+        type: "battle",
+        monster: {
+            name: "狼王",
+            health: 100,
+            maxHealth: 100,
+            attack: 15,
+            defense: 4,
+            reward: { money: 10, message: "擊敗狼王獲得 10 金錢！" },
+            escapeMessage: "狼王帶著狼群撤退了！沒有獲得任何獎勵。"
+        },
         weight: 7   // 較危險的敵人事件
     },
     {
         name: "哥布林商隊",
-        description: "你遭遇了哥布林商隊！擊敗他們後獲得了財寶。",
-        effect: { health: -15, money: 30, message: "失去 15 點生命值！獲得商隊的 30 金錢！" },
+        description: "你遭遇了哥布林商隊！哥布林戰士準備戰鬥！",
+        type: "battle",
+        monster: {
+            name: "哥布林戰士",
+            health: 60,
+            maxHealth: 60,
+            attack: 7,
+            defense: 1,
+            reward: { money: 30, message: "擊敗哥布林戰士獲得商隊的 30 金錢！" },
+            escapeMessage: "哥布林商隊逃走了！沒有獲得任何獎勵。"
+        },
         weight: 5   // 較稀有但有利可圖的事件
     },
     {

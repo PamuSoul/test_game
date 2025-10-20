@@ -903,6 +903,12 @@ class GameScene extends Phaser.Scene {
             return;
         }
         
+        // 檢查是否為戰鬥類型事件
+        if (randomEvent.type === "battle") {
+            this.startBattle(randomEvent);
+            return;
+        }
+        
         // 更新關卡
         this.currentLevel++;
         
@@ -1427,6 +1433,248 @@ class GameScene extends Phaser.Scene {
         
         // 恢復下一關按鈕
         this.nextLevelButton.setVisible(true);
+    }
+
+    // 開始戰鬥
+    startBattle(event) {
+        // 更新關卡
+        this.currentLevel++;
+        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        
+        // 隱藏下一關按鈕
+        this.nextLevelButton.setVisible(false);
+        
+        // 初始化戰鬥數據
+        this.battleData = {
+            monster: {
+                name: event.monster.name,
+                health: event.monster.health,
+                maxHealth: event.monster.maxHealth,
+                attack: event.monster.attack,
+                defense: event.monster.defense
+            },
+            reward: event.monster.reward,
+            escapeMessage: event.monster.escapeMessage,
+            currentRound: 1,
+            maxRounds: 30,
+            isPlayerTurn: true,
+            battleActive: true
+        };
+        
+        // 創建戰鬥介面
+        this.createBattleInterface();
+        
+        // 開始戰鬥循環
+        this.startBattleLoop();
+    }
+
+    // 創建戰鬥介面
+    createBattleInterface() {
+        // 初始化戰鬥訊息陣列
+        this.battleMessages = [];
+        
+        // 顯示初始戰鬥狀態
+        const initialStatus = `⚔️ 遭遇 ${this.battleData.monster.name}！\n\n` +
+                            `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n` +
+                            `⚔️ 你: ${this.playerHealth}/${this.playerMaxHealth} HP\n\n` +
+                            `戰鬥自動進行中...\n最多進行 ${this.battleData.maxRounds} 個回合\n\n` +
+                            `📝 戰鬥記錄:\n戰鬥開始！`;
+        
+        this.eventText.setText(initialStatus);
+        this.battleMessages.push('戰鬥開始！');
+        
+        // 清理現有的戰鬥元素
+        if (this.battleElements) {
+            this.battleElements.forEach(element => element.destroy());
+        }
+        this.battleElements = [];
+        
+        // 創建怪物圖片（暫時用方框代替）
+        const monsterBg = this.add.rectangle(280, 250, 80, 80, 0x8b4513);
+        monsterBg.setStrokeStyle(3, 0x654321);
+        this.battleElements.push(monsterBg);
+        
+        // 怪物名稱
+        const monsterNameText = this.add.text(280, 200, this.battleData.monster.name, {
+            fontSize: '14px',
+            fill: '#8b4513',
+            fontWeight: 'bold',
+            align: 'center'
+        }).setOrigin(0.5);
+        this.battleElements.push(monsterNameText);
+        
+        // 怪物血量背景
+        const monsterHealthBg = this.add.rectangle(280, 310, 100, 15, 0x2c3e50);
+        monsterHealthBg.setStrokeStyle(1, 0x34495e);
+        this.battleElements.push(monsterHealthBg);
+        
+        // 怪物血量條
+        this.monsterHealthBar = this.add.rectangle(230, 310, 100, 13, 0xe74c3c);
+        this.monsterHealthBar.setOrigin(0, 0.5);
+        this.battleElements.push(this.monsterHealthBar);
+        
+        // 怪物血量文字
+        this.monsterHealthText = this.add.text(280, 325, 
+            `${this.battleData.monster.health}/${this.battleData.monster.maxHealth}`, {
+            fontSize: '11px',
+            fill: '#2c3e50',
+            fontWeight: 'bold',
+            align: 'center'
+        }).setOrigin(0.5);
+        this.battleElements.push(this.monsterHealthText);
+        
+        // 回合數顯示
+        this.roundText = this.add.text(50, 200, `回合: 1/${this.battleData.maxRounds}`, {
+            fontSize: '12px',
+            fill: '#2c3e50',
+            fontWeight: 'bold'
+        });
+        this.battleElements.push(this.roundText);
+    }
+
+    // 開始戰鬥循環
+    startBattleLoop() {
+        if (!this.battleData.battleActive) return;
+        
+        // 更新回合數顯示
+        this.roundText.setText(`回合: ${this.battleData.currentRound}/${this.battleData.maxRounds}`);
+        
+        // 檢查是否超過最大回合數
+        if (this.battleData.currentRound > this.battleData.maxRounds) {
+            this.endBattle(false); // 怪物逃跑
+            return;
+        }
+        
+        // 玩家攻擊
+        this.time.delayedCall(500, () => {
+            this.playerAttackAction();
+            
+            // 檢查怪物是否死亡
+            if (this.battleData.monster.health <= 0) {
+                this.endBattle(true); // 玩家勝利
+                return;
+            }
+            
+            // 怪物攻擊
+            this.time.delayedCall(1000, () => {
+                this.monsterAttack();
+                
+                // 檢查玩家是否死亡
+                if (this.playerHealth <= 0) {
+                    this.endBattle(false, true); // 玩家死亡
+                    return;
+                }
+                
+                // 繼續下一回合
+                this.time.delayedCall(500, () => {
+                    // 增加回合數
+                    this.battleData.currentRound++;
+                    this.startBattleLoop();
+                });
+            });
+        });
+    }
+
+    // 玩家攻擊
+    playerAttackAction() {
+        const damage = Math.max(1, this.playerAttack - this.battleData.monster.defense);
+        this.battleData.monster.health = Math.max(0, this.battleData.monster.health - damage);
+        
+        this.updateBattleDisplay();
+        this.addBattleLog(`你攻擊 ${this.battleData.monster.name}，造成 ${damage} 點傷害！`);
+        
+        // 播放攻擊音效
+        this.playSound('eventNegative');
+    }
+
+    // 怪物攻擊
+    monsterAttack() {
+        const damage = Math.max(1, this.battleData.monster.attack - this.playerDefense);
+        this.playerHealth = Math.max(0, this.playerHealth - damage);
+        
+        this.updateHealthDisplay();
+        this.addBattleLog(`${this.battleData.monster.name} 攻擊你，造成 ${damage} 點傷害！`);
+        
+        // 播放受傷音效
+        this.playSound('eventNegative');
+    }
+
+    // 更新戰鬥顯示
+    updateBattleDisplay() {
+        // 更新怪物血量條
+        const healthPercentage = this.battleData.monster.health / this.battleData.monster.maxHealth;
+        this.monsterHealthBar.setScale(healthPercentage, 1);
+        
+        // 更新怪物血量文字
+        this.monsterHealthText.setText(
+            `${this.battleData.monster.health}/${this.battleData.monster.maxHealth}`
+        );
+        
+        // 根據血量改變顏色
+        if (healthPercentage > 0.6) {
+            this.monsterHealthBar.setFillStyle(0x27ae60); // 綠色
+        } else if (healthPercentage > 0.3) {
+            this.monsterHealthBar.setFillStyle(0xf39c12); // 橙色
+        } else {
+            this.monsterHealthBar.setFillStyle(0xe74c3c); // 紅色
+        }
+    }
+
+    // 添加戰鬥日誌到主要文字框
+    addBattleLog(message) {
+        // 添加訊息到陣列
+        this.battleMessages.push(message);
+        
+        // 限制訊息數量（保留最新的6條）
+        if (this.battleMessages.length > 6) {
+            this.battleMessages.shift();
+        }
+        
+        // 更新主要文字框內容
+        const battleStatus = `⚔️ 戰鬥進行中 - 回合 ${this.battleData.currentRound}/${this.battleData.maxRounds}\n\n` +
+                           `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n` +
+                           `⚔️ 你: ${this.playerHealth}/${this.playerMaxHealth} HP\n\n` +
+                           `📝 戰鬥記錄:\n${this.battleMessages.join('\n')}`;
+        
+        this.eventText.setText(battleStatus);
+    }
+
+    // 結束戰鬥
+    endBattle(playerWin, playerDied = false) {
+        this.battleData.battleActive = false;
+        
+        // 清理戰鬥元素
+        if (this.battleElements) {
+            this.battleElements.forEach(element => element.destroy());
+            this.battleElements = [];
+        }
+        
+        if (playerDied) {
+            // 玩家死亡
+            this.eventText.setText(
+                `你在與 ${this.battleData.monster.name} 的戰鬥中陣亡！\n\n💀 遊戲結束！點擊重新開始回到首頁。`
+            );
+            this.changeButtonToRestart();
+        } else if (playerWin) {
+            // 玩家勝利
+            this.gainMoney(this.battleData.reward.money);
+            this.playSound('eventPositive');
+            
+            this.eventText.setText(
+                `✅ 戰鬥勝利！\n\n${this.battleData.reward.message}\n\n💰 總金錢: ${this.playerMoney}`
+            );
+            
+            // 恢復下一關按鈕
+            this.nextLevelButton.setVisible(true);
+        } else {
+            // 怪物逃跑
+            this.eventText.setText(
+                `戰鬥超過 ${this.battleData.maxRounds} 個回合！\n\n${this.battleData.escapeMessage}`
+            );
+            
+            // 恢復下一關按鈕
+            this.nextLevelButton.setVisible(true);
+        }
     }
 
     // 重新開始遊戲
