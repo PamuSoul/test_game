@@ -1473,15 +1473,12 @@ class GameScene extends Phaser.Scene {
         // 初始化戰鬥訊息陣列
         this.battleMessages = [];
         
-        // 顯示初始戰鬥狀態
-        const initialStatus = `⚔️ 遭遇 ${this.battleData.monster.name}！\n\n` +
-                            `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n` +
-                            `⚔️ 你: ${this.playerHealth}/${this.playerMaxHealth} HP\n\n` +
-                            `戰鬥自動進行中...\n最多進行 ${this.battleData.maxRounds} 個回合\n\n` +
-                            `📝 戰鬥記錄:\n戰鬥開始！`;
+        // 顯示初始戰鬥狀態，只顯示怪物血量和戰鬥記錄
+        const initialStatus = `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n\n` +
+                            `📝 戰鬥記錄:\n戰鬥開始！遭遇 ${this.battleData.monster.name}！`;
         
         this.eventText.setText(initialStatus);
-        this.battleMessages.push('戰鬥開始！');
+        this.battleMessages.push(`戰鬥開始！遭遇 ${this.battleData.monster.name}！`);
         
         // 清理現有的戰鬥元素
         if (this.battleElements) {
@@ -1489,13 +1486,13 @@ class GameScene extends Phaser.Scene {
         }
         this.battleElements = [];
         
-        // 創建怪物圖片（暫時用方框代替）
-        const monsterBg = this.add.rectangle(280, 250, 80, 80, 0x8b4513);
+        // 創建怪物圖片（右側，與玩家水平對齊）
+        const monsterBg = this.add.rectangle(280, 300, 80, 80, 0x8b4513);
         monsterBg.setStrokeStyle(3, 0x654321);
         this.battleElements.push(monsterBg);
         
         // 怪物名稱
-        const monsterNameText = this.add.text(280, 200, this.battleData.monster.name, {
+        const monsterNameText = this.add.text(280, 250, this.battleData.monster.name, {
             fontSize: '14px',
             fill: '#8b4513',
             fontWeight: 'bold',
@@ -1504,17 +1501,17 @@ class GameScene extends Phaser.Scene {
         this.battleElements.push(monsterNameText);
         
         // 怪物血量背景
-        const monsterHealthBg = this.add.rectangle(280, 310, 100, 15, 0x2c3e50);
+        const monsterHealthBg = this.add.rectangle(280, 360, 100, 15, 0x2c3e50);
         monsterHealthBg.setStrokeStyle(1, 0x34495e);
         this.battleElements.push(monsterHealthBg);
         
         // 怪物血量條
-        this.monsterHealthBar = this.add.rectangle(230, 310, 100, 13, 0xe74c3c);
+        this.monsterHealthBar = this.add.rectangle(230, 360, 100, 13, 0xe74c3c);
         this.monsterHealthBar.setOrigin(0, 0.5);
         this.battleElements.push(this.monsterHealthBar);
         
         // 怪物血量文字
-        this.monsterHealthText = this.add.text(280, 325, 
+        this.monsterHealthText = this.add.text(280, 375, 
             `${this.battleData.monster.health}/${this.battleData.monster.maxHealth}`, {
             fontSize: '11px',
             fill: '#2c3e50',
@@ -1522,22 +1519,11 @@ class GameScene extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5);
         this.battleElements.push(this.monsterHealthText);
-        
-        // 回合數顯示
-        this.roundText = this.add.text(50, 200, `回合: 1/${this.battleData.maxRounds}`, {
-            fontSize: '12px',
-            fill: '#2c3e50',
-            fontWeight: 'bold'
-        });
-        this.battleElements.push(this.roundText);
     }
 
     // 開始戰鬥循環
     startBattleLoop() {
         if (!this.battleData.battleActive) return;
-        
-        // 更新回合數顯示
-        this.roundText.setText(`回合: ${this.battleData.currentRound}/${this.battleData.maxRounds}`);
         
         // 檢查是否超過最大回合數
         if (this.battleData.currentRound > this.battleData.maxRounds) {
@@ -1630,10 +1616,8 @@ class GameScene extends Phaser.Scene {
             this.battleMessages.shift();
         }
         
-        // 更新主要文字框內容
-        const battleStatus = `⚔️ 戰鬥進行中 - 回合 ${this.battleData.currentRound}/${this.battleData.maxRounds}\n\n` +
-                           `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n` +
-                           `⚔️ 你: ${this.playerHealth}/${this.playerMaxHealth} HP\n\n` +
+        // 更新主要文字框內容，只顯示怪物血量和戰鬥記錄
+        const battleStatus = `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n\n` +
                            `📝 戰鬥記錄:\n${this.battleMessages.join('\n')}`;
         
         this.eventText.setText(battleStatus);
