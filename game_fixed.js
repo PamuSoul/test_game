@@ -1505,8 +1505,8 @@ class GameScene extends Phaser.Scene {
         monsterHealthBg.setStrokeStyle(1, 0x34495e);
         this.battleElements.push(monsterHealthBg);
         
-        // 怪物血量條
-        this.monsterHealthBar = this.add.rectangle(230, 360, 100, 13, 0xe74c3c);
+        // 怪物血量條 (綠色)
+        this.monsterHealthBar = this.add.rectangle(230, 360, 100, 13, 0x27ae60);
         this.monsterHealthBar.setOrigin(0, 0.5);
         this.battleElements.push(this.monsterHealthBar);
         
@@ -1519,6 +1519,9 @@ class GameScene extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5);
         this.battleElements.push(this.monsterHealthText);
+        
+        // 初始化血量條顯示
+        this.updateBattleDisplay();
     }
 
     // 開始戰鬥循環
