@@ -103,11 +103,17 @@ const GameDatabase = {
             // 初始裝備 - 給玩家一些基礎裝備
             const initialEquipment = [
                 { id: 1, type: 'weapon', name: '生鏽劍', quality: 0, level: 0, baseAttack: 5 },
-                { id: 2, type: 'armor', name: '布甲', quality: 0, level: 0, baseDefense: 3 },
-                { id: 3, type: 'shield', name: '木盾', quality: 0, level: 0, baseDefense: 2 },
-                { id: 4, type: 'boots', name: '草鞋', quality: 0, level: 0, baseSpeed: 1 },
+                { id: 2, type: 'armor', name: '布甲', quality: 0, level: 0, baseDefense: 4 },
+                { id: 3, type: 'shield', name: '木盾', quality: 0, level: 0, baseDefense: 3 },
+                { id: 4, type: 'boots', name: '草鞋', quality: 0, level: 0, baseDefense: 2 },
                 { id: 5, type: 'weapon', name: '生鏽劍', quality: 0, level: 0, baseAttack: 5 },
-                { id: 6, type: 'weapon', name: '鐵劍', quality: 1, level: 0, baseAttack: 8 }
+                { id: 6, type: 'weapon', name: '鐵劍', quality: 1, level: 0, baseAttack: 8 },
+                { id: 7, type: 'armor', name: '布甲', quality: 0, level: 0, baseDefense: 4 },
+                { id: 8, type: 'shield', name: '木盾', quality: 0, level: 0, baseDefense: 3 },
+                { id: 9, type: 'boots', name: '草鞋', quality: 0, level: 0, baseDefense: 2 },
+                { id: 10, type: 'armor', name: '皮甲', quality: 1, level: 0, baseDefense: 6 },
+                { id: 11, type: 'shield', name: '鐵盾', quality: 1, level: 0, baseDefense: 5 },
+                { id: 12, type: 'boots', name: '皮靴', quality: 1, level: 0, baseDefense: 3 }
             ];
             this.saveEquipmentInventory(initialEquipment);
             return initialEquipment;
@@ -207,8 +213,7 @@ const GameDatabase = {
             quality: equipment1.quality + 1,
             level: 0,
             baseAttack: equipment1.baseAttack ? Math.floor(equipment1.baseAttack * 1.5) : undefined,
-            baseDefense: equipment1.baseDefense ? Math.floor(equipment1.baseDefense * 1.5) : undefined,
-            baseSpeed: equipment1.baseSpeed ? Math.floor(equipment1.baseSpeed * 1.5) : undefined
+            baseDefense: equipment1.baseDefense ? Math.floor(equipment1.baseDefense * 1.5) : undefined
         };
         
         return newEquipment;
@@ -861,7 +866,7 @@ class EquipmentScene extends Phaser.Scene {
     createEquipmentSlots() {
         const slotConfig = [
             { type: 'weapon', x: 80, y: 120, emoji: '⚔️', name: '武器' },
-            { type: 'armor', x: 295, y: 120, emoji: '🛡️', name: '防具' },
+            { type: 'armor', x: 295, y: 120, emoji: '🥼', name: '防具' },
             { type: 'shield', x: 80, y: 220, emoji: '🛡️', name: '盾牌' },
             { type: 'boots', x: 295, y: 220, emoji: '👢', name: '鞋子' }
         ];
@@ -928,7 +933,7 @@ class EquipmentScene extends Phaser.Scene {
         // 裝備圖標 (使用emoji代表)
         const icons = {
             weapon: '⚔️',
-            armor: '🛡️', 
+            armor: '🥼', 
             shield: '🛡️',
             boots: '👢'
         };
@@ -1043,7 +1048,7 @@ class EquipmentScene extends Phaser.Scene {
         // 物品圖標
         const icons = {
             weapon: '⚔️',
-            armor: '🛡️',
+            armor: '🥼',
             shield: '🛡️', 
             boots: '👢'
         };
@@ -1120,7 +1125,45 @@ class EquipmentScene extends Phaser.Scene {
         if (index < this.equipmentInventory.length) {
             this.selectedInventoryItem = this.equipmentInventory[index];
             this.highlightSelectedItem(index);
+            this.showEquipmentDetails(this.selectedInventoryItem);
         }
+    }
+
+    showEquipmentDetails(equipment) {
+        // 移除之前的詳細信息
+        if (this.equipmentDetailsText) {
+            this.equipmentDetailsText.destroy();
+        }
+
+        let detailsText = `${equipment.name}\n`;
+        
+        // 根據品質顯示顏色
+        const qualityNames = ['普通', '精良', '稀有', '史詩'];
+        const qualityColors = ['#ffffff', '#3498db', '#f1c40f', '#9b59b6'];
+        detailsText += `品質: ${qualityNames[equipment.quality]}\n`;
+        
+        if (equipment.level > 0) {
+            detailsText += `強化等級: +${equipment.level}\n`;
+        }
+        
+        if (equipment.baseAttack) {
+            const totalAttack = equipment.baseAttack + (equipment.level * 2);
+            detailsText += `攻擊力: ${totalAttack}\n`;
+        }
+        
+        if (equipment.baseDefense) {
+            const totalDefense = equipment.baseDefense + (equipment.level * 1);
+            detailsText += `防禦力: ${totalDefense}\n`;
+        }
+
+        this.equipmentDetailsText = this.add.text(187.5, 250, detailsText, {
+            fontSize: '11px',
+            fill: qualityColors[equipment.quality],
+            fontWeight: 'bold',
+            align: 'center',
+            backgroundColor: 0x000000,
+            padding: { x: 8, y: 4 }
+        }).setOrigin(0.5);
     }
 
     highlightSelectedItem(index) {
@@ -1204,13 +1247,35 @@ class EquipmentScene extends Phaser.Scene {
         // 收集所有可合成的裝備
         const synthesizableGroups = this.findSynthesizableGroups();
         
+        console.log('可合成的裝備組:', synthesizableGroups); // 調試信息
+        console.log('當前裝備背包:', this.equipmentInventory); // 調試信息
+        
         if (synthesizableGroups.length === 0) {
-            this.showMessage('沒有可合成的裝備！需要兩個相同類型、名稱和品質的裝備', 0xe74c3c);
+            // 如果沒有可合成的裝備，為測試目的添加一些
+            this.addTestEquipmentForSynthesis();
+            this.showMessage('已添加測試裝備！請再次嘗試合成', 0xf39c12);
             return;
         }
 
         // 顯示合成選項
         this.showSynthesizeOptions(synthesizableGroups);
+    }
+
+    addTestEquipmentForSynthesis() {
+        // 添加一些可以合成的測試裝備
+        const testEquipment = [
+            { id: Date.now() + 1, type: 'weapon', name: '測試劍', quality: 0, level: 0, baseAttack: 3 },
+            { id: Date.now() + 2, type: 'weapon', name: '測試劍', quality: 0, level: 0, baseAttack: 3 },
+            { id: Date.now() + 3, type: 'armor', name: '測試甲', quality: 0, level: 0, baseDefense: 2 },
+            { id: Date.now() + 4, type: 'armor', name: '測試甲', quality: 0, level: 0, baseDefense: 2 }
+        ];
+        
+        testEquipment.forEach(equipment => {
+            this.equipmentInventory.push(equipment);
+        });
+        
+        GameDatabase.saveEquipmentInventory(this.equipmentInventory);
+        this.refreshDisplay();
     }
 
     findSynthesizableGroups() {
@@ -1232,7 +1297,7 @@ class EquipmentScene extends Phaser.Scene {
             .filter(([key, items]) => items.length >= 2)
             .map(([key, items]) => ({
                 key,
-                items: items.slice(0, 2), // 只取前兩個用來合成
+                items: items, // 返回所有相同的裝備供選擇
                 result: this.previewSynthesizeResult(items[0].equipment)
             }));
     }
@@ -1244,8 +1309,7 @@ class EquipmentScene extends Phaser.Scene {
             quality: equipment.quality + 1,
             level: 0,
             baseAttack: equipment.baseAttack ? Math.floor(equipment.baseAttack * 1.5) : undefined,
-            baseDefense: equipment.baseDefense ? Math.floor(equipment.baseDefense * 1.5) : undefined,
-            baseSpeed: equipment.baseSpeed ? Math.floor(equipment.baseSpeed * 1.5) : undefined
+            baseDefense: equipment.baseDefense ? Math.floor(equipment.baseDefense * 1.5) : undefined
         };
     }
 
@@ -1254,33 +1318,54 @@ class EquipmentScene extends Phaser.Scene {
         const overlay = this.add.graphics();
         overlay.fillStyle(0x000000, 0.7);
         overlay.fillRect(0, 0, 375, 667);
+        overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, 375, 667), Phaser.Geom.Rectangle.Contains);
+        
+        // 添加空的點擊事件處理器來阻止點擊穿透
+        overlay.on('pointerdown', () => {
+            // 空的處理器，阻止事件冒泡到背景
+        });
 
         const panel = this.add.graphics();
         panel.fillStyle(0x2c3e50, 0.95);
         panel.fillRoundedRect(50, 150, 275, 350, 10);
         panel.lineStyle(3, 0x3498db);
         panel.strokeRoundedRect(50, 150, 275, 350, 10);
+        panel.setInteractive(new Phaser.Geom.Rectangle(50, 150, 275, 350), Phaser.Geom.Rectangle.Contains);
+        
+        // 添加空的點擊事件處理器
+        panel.on('pointerdown', () => {
+            // 空的處理器，阻止事件冒泡
+        });
 
-        this.add.text(187.5, 180, '選擇要合成的裝備', {
+        const titleText = this.add.text(187.5, 180, '選擇要合成的裝備', {
             fontSize: '18px',
             fill: '#ecf0f1',
             fontWeight: 'bold'
         }).setOrigin(0.5);
 
+        // 收集所有要銷毀的元素
+        const elementsToDestroy = [overlay, panel, titleText];
+
         // 顯示合成選項
         groups.forEach((group, index) => {
             const y = 220 + index * 60;
-            this.createSynthesizeOption(group, 187.5, y, overlay, panel);
+            const optionElements = this.createSynthesizeOption(group, 187.5, y, elementsToDestroy);
+            elementsToDestroy.push(...optionElements);
         });
 
         // 關閉按鈕
         const closeBtn = this.createButton(187.5, 460, '關閉', 0x95a5a6, () => {
-            overlay.destroy();
-            panel.destroy();
+            elementsToDestroy.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
         });
+        
+        elementsToDestroy.push(closeBtn);
     }
 
-    createSynthesizeOption(group, x, y, overlay, panel) {
+    createSynthesizeOption(group, x, y, elementsToDestroy) {
         const equipment = group.items[0].equipment;
         const result = group.result;
 
@@ -1291,28 +1376,37 @@ class EquipmentScene extends Phaser.Scene {
         optionBg.lineStyle(1, 0x7f8c8d);
         optionBg.strokeRoundedRect(x - 120, y - 20, 240, 40, 5);
 
+        // 創建一個透明的互動區域
+        const interactiveArea = this.add.rectangle(x, y, 240, 40, 0x000000, 0);
+        interactiveArea.setInteractive({ useHandCursor: true });
+
         // 品質顏色
         const qualityColors = ['#ffffff', '#3498db', '#f1c40f', '#9b59b6'];
         const currentQualityColor = qualityColors[equipment.quality];
         const nextQualityColor = qualityColors[result.quality];
 
         // 顯示合成信息
-        const text = `${equipment.name} (x2) → ${result.name}`;
+        const text = `${equipment.name} (x${group.items.length}) → ${result.name}`;
         const optionText = this.add.text(x, y, text, {
             fontSize: '12px',
             fill: '#ecf0f1',
             fontWeight: 'bold'
         }).setOrigin(0.5);
 
-        // 設置互動
-        optionBg.setInteractive();
-        optionBg.on('pointerdown', () => {
-            this.performSynthesize(group);
-            overlay.destroy();
-            panel.destroy();
+        // 設置互動事件
+        interactiveArea.on('pointerdown', () => {
+            console.log('合成選項被點擊:', group); // 調試信息
+            // 銷毀當前界面
+            elementsToDestroy.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
+            // 顯示裝備選擇界面
+            this.showEquipmentSelectionForSynthesis(group);
         });
 
-        optionBg.on('pointerover', () => {
+        interactiveArea.on('pointerover', () => {
             optionBg.clear();
             optionBg.fillStyle(0x5d6d7e, 0.8);
             optionBg.fillRoundedRect(x - 120, y - 20, 240, 40, 5);
@@ -1320,21 +1414,215 @@ class EquipmentScene extends Phaser.Scene {
             optionBg.strokeRoundedRect(x - 120, y - 20, 240, 40, 5);
         });
 
-        optionBg.on('pointerout', () => {
+        interactiveArea.on('pointerout', () => {
             optionBg.clear();
             optionBg.fillStyle(0x34495e, 0.8);
             optionBg.fillRoundedRect(x - 120, y - 20, 240, 40, 5);
             optionBg.lineStyle(1, 0x7f8c8d);
             optionBg.strokeRoundedRect(x - 120, y - 20, 240, 40, 5);
         });
+        
+        return [optionBg, optionText, interactiveArea];
+    }
+
+    showEquipmentSelectionForSynthesis(group) {
+        // 創建選擇界面
+        const overlay = this.add.graphics();
+        overlay.fillStyle(0x000000, 0.7);
+        overlay.fillRect(0, 0, 375, 667);
+        overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, 375, 667), Phaser.Geom.Rectangle.Contains);
+        
+        overlay.on('pointerdown', () => {
+            // 空的處理器，阻止事件冒泡
+        });
+
+        const panel = this.add.graphics();
+        panel.fillStyle(0x2c3e50, 0.95);
+        panel.fillRoundedRect(30, 100, 315, 467, 10);
+        panel.lineStyle(3, 0x3498db);
+        panel.strokeRoundedRect(30, 100, 315, 467, 10);
+        panel.setInteractive(new Phaser.Geom.Rectangle(30, 100, 315, 467), Phaser.Geom.Rectangle.Contains);
+        
+        panel.on('pointerdown', () => {
+            // 空的處理器，阻止事件冒泡
+        });
+
+        const titleText = this.add.text(187.5, 130, `選擇要合成的 ${group.items[0].equipment.name}`, {
+            fontSize: '16px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const instructionText = this.add.text(187.5, 155, '請選擇兩個裝備來合成', {
+            fontSize: '12px',
+            fill: '#bdc3c7',
+        }).setOrigin(0.5);
+
+        // 收集所有要銷毀的元素
+        const elementsToDestroy = [overlay, panel, titleText, instructionText];
+        
+        // 選擇狀態
+        let selectedItems = [];
+
+        // 顯示所有相同的裝備供選擇
+        group.items.forEach((item, index) => {
+            const equipment = item.equipment;
+            const row = Math.floor(index / 3);
+            const col = index % 3;
+            const x = 80 + col * 80;
+            const y = 200 + row * 80;
+
+            const elements = this.createSelectableEquipmentItem(equipment, item.index, x, y, selectedItems, elementsToDestroy);
+            elementsToDestroy.push(...elements);
+        });
+
+        // 合成按鈕
+        const synthesizeBtn = this.createButton(120, 520, '合成', 0x27ae60, () => {
+            if (selectedItems.length === 2) {
+                this.performSelectedSynthesize(selectedItems);
+                elementsToDestroy.forEach(element => {
+                    if (element && element.destroy) {
+                        element.destroy();
+                    }
+                });
+            } else {
+                this.showMessage('請選擇兩個裝備！', 0xe74c3c);
+            }
+        });
+
+        // 取消按鈕
+        const cancelBtn = this.createButton(255, 520, '取消', 0x95a5a6, () => {
+            elementsToDestroy.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
+        });
+
+        elementsToDestroy.push(synthesizeBtn, cancelBtn);
+    }
+
+    createSelectableEquipmentItem(equipment, originalIndex, x, y, selectedItems, elementsToDestroy) {
+        // 根據品質設置背景顏色
+        const qualityColors = [0xffffff, 0x3498db, 0xf1c40f, 0x9b59b6]; // 白藍金紫
+        const qualityBorderColors = [0xe8e8e8, 0x2980b9, 0xe67e22, 0x8e44ad]; // 對應的邊框顏色
+        const bgColor = qualityColors[equipment.quality];
+        const borderColor = qualityBorderColors[equipment.quality];
+        
+        // 裝備背景
+        const itemBg = this.add.graphics();
+        itemBg.fillStyle(bgColor, 0.3);
+        itemBg.fillRoundedRect(x - 30, y - 30, 60, 60, 8);
+        itemBg.lineStyle(2, borderColor);
+        itemBg.strokeRoundedRect(x - 30, y - 30, 60, 60, 8);
+
+        // 互動區域
+        const interactiveArea = this.add.rectangle(x, y, 60, 60, 0x000000, 0);
+        interactiveArea.setInteractive({ useHandCursor: true });
+
+        // 裝備圖標
+        const icons = {
+            weapon: '⚔️',
+            armor: '🥼',
+            shield: '🛡️',
+            boots: '👢'
+        };
+
+        const icon = this.add.text(x, y - 8, icons[equipment.type], {
+            fontSize: '20px'
+        }).setOrigin(0.5);
+
+        // 強化等級顯示
+        let levelText = null;
+        if (equipment.level > 0) {
+            levelText = this.add.text(x, y + 15, `+${equipment.level}`, {
+                fontSize: '10px',
+                fill: '#e74c3c',
+                fontWeight: 'bold'
+            }).setOrigin(0.5);
+        }
+
+        // 點擊事件
+        interactiveArea.on('pointerdown', () => {
+            const itemData = { equipment, originalIndex };
+            
+            // 檢查是否已選中
+            const existingIndex = selectedItems.findIndex(item => item.originalIndex === originalIndex);
+            
+            if (existingIndex >= 0) {
+                // 取消選中 - 恢復品質顏色
+                selectedItems.splice(existingIndex, 1);
+                itemBg.clear();
+                itemBg.fillStyle(bgColor, 0.3);
+                itemBg.fillRoundedRect(x - 30, y - 30, 60, 60, 8);
+                itemBg.lineStyle(2, borderColor);
+                itemBg.strokeRoundedRect(x - 30, y - 30, 60, 60, 8);
+            } else if (selectedItems.length < 2) {
+                // 選中 - 使用綠色高亮但保持品質色調
+                selectedItems.push(itemData);
+                itemBg.clear();
+                itemBg.fillStyle(0x27ae60, 0.6);
+                itemBg.fillRoundedRect(x - 30, y - 30, 60, 60, 8);
+                itemBg.lineStyle(4, 0x27ae60);
+                itemBg.strokeRoundedRect(x - 30, y - 30, 60, 60, 8);
+                
+                // 在選中狀態下添加品質顏色的內邊框
+                itemBg.lineStyle(2, borderColor);
+                itemBg.strokeRoundedRect(x - 27, y - 27, 54, 54, 6);
+            } else {
+                this.showMessage('最多只能選擇兩個裝備！', 0xe74c3c);
+            }
+        });
+
+        const elements = [itemBg, interactiveArea, icon];
+        if (levelText) {
+            elements.push(levelText);
+        }
+        
+        return elements;
+    }
+
+    performSelectedSynthesize(selectedItems) {
+        const item1 = selectedItems[0];
+        const item2 = selectedItems[1];
+
+        // 創建新裝備
+        const newEquipment = GameDatabase.synthesizeEquipment(item1.equipment, item2.equipment);
+        
+        console.log('選擇合成結果:', newEquipment); // 調試信息
+        
+        if (newEquipment) {
+            // 移除原有的兩個裝備（按索引從大到小移除，避免索引位移問題）
+            const indices = [item1.originalIndex, item2.originalIndex].sort((a, b) => b - a);
+            indices.forEach(index => {
+                this.equipmentInventory.splice(index, 1);
+            });
+            
+            // 添加新裝備
+            this.equipmentInventory.push(newEquipment);
+            
+            // 保存數據
+            GameDatabase.saveEquipmentInventory(this.equipmentInventory);
+            
+            // 刷新顯示
+            this.refreshDisplay();
+            
+            this.showMessage(`合成成功！獲得 ${newEquipment.name}`, 0x27ae60);
+        } else {
+            this.showMessage('合成失敗！', 0xe74c3c);
+        }
     }
 
     performSynthesize(group) {
+        console.log('執行合成:', group); // 調試信息
+        
         const item1 = group.items[0];
         const item2 = group.items[1];
 
         // 創建新裝備
         const newEquipment = GameDatabase.synthesizeEquipment(item1.equipment, item2.equipment);
+        
+        console.log('合成結果:', newEquipment); // 調試信息
         
         if (newEquipment) {
             // 移除原有的兩個裝備
@@ -1370,7 +1658,7 @@ class EquipmentScene extends Phaser.Scene {
             if (equipment) {
                 this.displayEquipmentInSlot(slot, equipment);
             } else {
-                const icons = { weapon: '⚔️', armor: '🛡️', shield: '🛡️', boots: '👢' };
+                const icons = { weapon: '⚔️', armor: '🥼', shield: '🛡️', boots: '👢' };
                 const defaultIcon = this.add.text(0, 0, icons[type], {
                     fontSize: '24px'
                 }).setOrigin(0.5);
@@ -1449,9 +1737,33 @@ class GameScene extends Phaser.Scene {
         this.maxHealth = baseMaxHealth;
         this.currentLevel = 1;
         
-        // 初始化攻擊力和防禦力（從GameDatabase載入）
-        this.playerAttack = GameDatabase.loadAttack();
-        this.playerDefense = GameDatabase.loadDefense();
+        // 初始化攻擊力和防禦力（包含裝備加成）
+        this.calculatePlayerStats();
+    }
+
+    calculatePlayerStats() {
+        // 基礎攻擊力和防禦力
+        let totalAttack = GameDatabase.loadAttack();
+        let totalDefense = GameDatabase.loadDefense();
+
+        // 載入裝備並計算加成
+        const playerEquipment = GameDatabase.loadEquippedItems();
+        
+        Object.values(playerEquipment).forEach(equipment => {
+            if (equipment) {
+                if (equipment.baseAttack) {
+                    totalAttack += equipment.baseAttack + (equipment.level * 2);
+                }
+                if (equipment.baseDefense) {
+                    totalDefense += equipment.baseDefense + (equipment.level * 1);
+                }
+            }
+        });
+
+        this.playerAttack = totalAttack;
+        this.playerDefense = totalDefense;
+        
+        console.log(`玩家總攻擊力: ${totalAttack}, 總防禦力: ${totalDefense}`); // 調試信息
     }
 
     preload() {
