@@ -67,6 +67,158 @@ const GameDatabase = {
         const newDefense = currentDefense + amount;
         this.saveDefense(newDefense);
         return newDefense;
+    },
+
+    // === 裝備系統 ===
+    // 裝備品質等級: 0=白色, 1=藍色, 2=金色, 3=紫色
+    // 裝備類型: weapon=武器, armor=防具, shield=盾牌, boots=鞋子
+    
+    // 保存玩家裝備
+    saveEquippedItems(equipment) {
+        localStorage.setItem('playerEquipment', JSON.stringify(equipment));
+    },
+    
+    // 載入玩家裝備
+    loadEquippedItems() {
+        const saved = localStorage.getItem('playerEquipment');
+        return saved ? JSON.parse(saved) : {
+            weapon: null,
+            armor: null,
+            shield: null,
+            boots: null
+        };
+    },
+    
+    // 保存裝備背包
+    saveEquipmentInventory(inventory) {
+        localStorage.setItem('equipmentInventory', JSON.stringify(inventory));
+    },
+    
+    // 載入裝備背包
+    loadEquipmentInventory() {
+        const saved = localStorage.getItem('equipmentInventory');
+        if (saved) {
+            return JSON.parse(saved);
+        } else {
+            // 初始裝備 - 給玩家一些基礎裝備
+            const initialEquipment = [
+                { id: 1, type: 'weapon', name: '生鏽劍', quality: 0, level: 0, baseAttack: 5 },
+                { id: 2, type: 'armor', name: '布甲', quality: 0, level: 0, baseDefense: 3 },
+                { id: 3, type: 'shield', name: '木盾', quality: 0, level: 0, baseDefense: 2 },
+                { id: 4, type: 'boots', name: '草鞋', quality: 0, level: 0, baseSpeed: 1 },
+                { id: 5, type: 'weapon', name: '生鏽劍', quality: 0, level: 0, baseAttack: 5 },
+                { id: 6, type: 'weapon', name: '鐵劍', quality: 1, level: 0, baseAttack: 8 }
+            ];
+            this.saveEquipmentInventory(initialEquipment);
+            return initialEquipment;
+        }
+    },
+    
+    // 添加裝備到背包
+    addEquipmentToInventory(equipment) {
+        const inventory = this.loadEquipmentInventory();
+        equipment.id = Date.now() + Math.random(); // 生成唯一ID
+        inventory.push(equipment);
+        this.saveEquipmentInventory(inventory);
+        return inventory;
+    },
+    
+    // 從背包移除裝備
+    removeEquipmentFromInventory(equipmentId) {
+        const inventory = this.loadEquipmentInventory();
+        const newInventory = inventory.filter(item => item.id !== equipmentId);
+        this.saveEquipmentInventory(newInventory);
+        return newInventory;
+    },
+    
+    // 裝備物品
+    equipItem(equipment) {
+        const currentEquipment = this.loadEquippedItems();
+        const inventory = this.loadEquipmentInventory();
+        
+        // 如果已有同類型裝備，放回背包
+        if (currentEquipment[equipment.type]) {
+            inventory.push(currentEquipment[equipment.type]);
+        }
+        
+        // 裝備新物品
+        currentEquipment[equipment.type] = equipment;
+        
+        // 從背包中移除
+        const newInventory = inventory.filter(item => item.id !== equipment.id);
+        
+        this.saveEquippedItems(currentEquipment);
+        this.saveEquipmentInventory(newInventory);
+        
+        return { equipment: currentEquipment, inventory: newInventory };
+    },
+    
+    // 卸下裝備
+    unequipItem(equipmentType) {
+        const currentEquipment = this.loadEquippedItems();
+        const inventory = this.loadEquipmentInventory();
+        
+        if (currentEquipment[equipmentType]) {
+            // 放回背包
+            inventory.push(currentEquipment[equipmentType]);
+            // 卸下裝備
+            currentEquipment[equipmentType] = null;
+            
+            this.saveEquippedItems(currentEquipment);
+            this.saveEquipmentInventory(inventory);
+        }
+        
+        return { equipment: currentEquipment, inventory: inventory };
+    },
+    
+    // 強化裝備
+    enhanceEquipment(equipment, cost) {
+        if (this.spendMoney(cost) < this.loadMoney()) {
+            return false; // 金錢不足
+        }
+        
+        if (equipment.level >= 10) {
+            return false; // 已達最高等級
+        }
+        
+        equipment.level += 1;
+        return true;
+    },
+    
+    // 合成裝備
+    synthesizeEquipment(equipment1, equipment2) {
+        // 檢查是否為相同類型和品質的裝備
+        if (equipment1.type !== equipment2.type || 
+            equipment1.quality !== equipment2.quality || 
+            equipment1.name !== equipment2.name) {
+            return null;
+        }
+        
+        // 檢查是否已達最高品質
+        if (equipment1.quality >= 3) {
+            return null;
+        }
+        
+        // 創建新的高品質裝備
+        const newEquipment = {
+            id: Date.now() + Math.random(),
+            type: equipment1.type,
+            name: this.getUpgradedEquipmentName(equipment1.name, equipment1.quality + 1),
+            quality: equipment1.quality + 1,
+            level: 0,
+            baseAttack: equipment1.baseAttack ? Math.floor(equipment1.baseAttack * 1.5) : undefined,
+            baseDefense: equipment1.baseDefense ? Math.floor(equipment1.baseDefense * 1.5) : undefined,
+            baseSpeed: equipment1.baseSpeed ? Math.floor(equipment1.baseSpeed * 1.5) : undefined
+        };
+        
+        return newEquipment;
+    },
+    
+    // 根據品質獲取升級後的裝備名稱
+    getUpgradedEquipmentName(baseName, quality) {
+        const qualityPrefixes = ['', '精良', '稀有', '史詩'];
+        const cleanName = baseName.replace(/^(精良|稀有|史詩)\s*/, '');
+        return quality > 0 ? `${qualityPrefixes[quality]} ${cleanName}` : cleanName;
     }
 };
 
@@ -270,8 +422,8 @@ class StartScene extends Phaser.Scene {
             equipButton.setScale(0.95);
             this.time.delayedCall(100, () => {
                 equipButton.setScale(1.05);
-                // 裝備功能暫未實裝
-                console.log('裝備功能暫未實裝');
+                // 切換到裝備場景
+                this.scene.start('EquipmentScene');
             });
         });
 
@@ -603,6 +755,684 @@ class UpgradeScene extends Phaser.Scene {
                 this.scene.restart();
             });
         }
+    }
+}
+
+// 裝備場景
+class EquipmentScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'EquipmentScene' });
+        this.playerEquipment = null;
+        this.equipmentInventory = null;
+        this.selectedInventoryItem = null;
+        this.equipmentSlots = {};
+        this.inventoryItems = [];
+    }
+
+    create() {
+        // 載入裝備數據
+        this.playerEquipment = GameDatabase.loadEquippedItems();
+        this.equipmentInventory = GameDatabase.loadEquipmentInventory();
+
+        // 背景
+        this.add.rectangle(187.5, 333.5, 375, 667, 0x34495e);
+
+        // 標題
+        this.add.text(187.5, 30, '裝備管理', {
+            fontSize: '28px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 金錢顯示
+        const currentMoney = GameDatabase.loadMoney();
+        this.moneyText = this.add.text(332.5, 15, `💰 ${currentMoney}`, {
+            fontSize: '14px',
+            fill: '#f39c12',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 返回按鈕
+        this.createBackButton();
+
+        // 玩家角色圖像區域 (上方中央)
+        this.createPlayerSection();
+
+        // 裝備槽位 (四個角落)
+        this.createEquipmentSlots();
+
+        // 裝備清單區域 (下方)
+        this.createInventorySection();
+    }
+
+    createBackButton() {
+        const backButtonBg = this.add.rectangle(0, 0, 80, 35, 0x95a5a6, 1);
+        backButtonBg.setStrokeStyle(2, 0x7f8c8d);
+        
+        const backButtonText = this.add.text(0, 0, '返回', {
+            fontSize: '16px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const backButton = this.add.container(40, 25, [backButtonBg, backButtonText]);
+        backButton.setSize(80, 35);
+        backButton.setInteractive({ useHandCursor: true });
+        
+        backButton.on('pointerover', () => {
+            backButtonBg.setFillStyle(0x7f8c8d);
+            backButton.setScale(1.05);
+        });
+
+        backButton.on('pointerout', () => {
+            backButtonBg.setFillStyle(0x95a5a6);
+            backButton.setScale(1);
+        });
+
+        backButton.on('pointerdown', () => {
+            backButton.setScale(0.95);
+            this.time.delayedCall(100, () => {
+                this.scene.start('StartScene');
+            });
+        });
+    }
+
+    createPlayerSection() {
+        // 玩家角色背景框
+        const playerBg = this.add.graphics();
+        playerBg.fillStyle(0x2c3e50, 0.8);
+        playerBg.fillRoundedRect(137.5, 80, 100, 120, 10);
+        playerBg.lineStyle(3, 0x3498db);
+        playerBg.strokeRoundedRect(137.5, 80, 100, 120, 10);
+
+        // 玩家角色圖像 (簡單的圓形代表)
+        const playerAvatar = this.add.circle(187.5, 140, 35, 0x3498db);
+        playerAvatar.setStrokeStyle(3, 0x2980b9);
+
+        // 玩家圖標
+        this.add.text(187.5, 140, '👤', {
+            fontSize: '40px'
+        }).setOrigin(0.5);
+
+        // 玩家狀態顯示
+        this.updatePlayerStats();
+    }
+
+    createEquipmentSlots() {
+        const slotConfig = [
+            { type: 'weapon', x: 80, y: 120, emoji: '⚔️', name: '武器' },
+            { type: 'armor', x: 295, y: 120, emoji: '🛡️', name: '防具' },
+            { type: 'shield', x: 80, y: 220, emoji: '🛡️', name: '盾牌' },
+            { type: 'boots', x: 295, y: 220, emoji: '👢', name: '鞋子' }
+        ];
+
+        slotConfig.forEach(slot => {
+            this.createEquipmentSlot(slot);
+        });
+    }
+
+    createEquipmentSlot(config) {
+        // 裝備槽背景
+        const slotBg = this.add.graphics();
+        slotBg.fillStyle(0x34495e, 0.9);
+        slotBg.fillRoundedRect(config.x - 30, config.y - 30, 60, 60, 8);
+        slotBg.lineStyle(2, 0x7f8c8d);
+        slotBg.strokeRoundedRect(config.x - 30, config.y - 30, 60, 60, 8);
+
+        // 裝備槽標籤
+        this.add.text(config.x, config.y - 50, config.name, {
+            fontSize: '12px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 裝備槽內容
+        const slotContent = this.add.container(config.x, config.y);
+        
+        // 如果有裝備，顯示裝備；否則顯示默認圖標
+        const equipment = this.playerEquipment[config.type];
+        if (equipment) {
+            this.displayEquipmentInSlot(slotContent, equipment);
+        } else {
+            const defaultIcon = this.add.text(0, 0, config.emoji, {
+                fontSize: '24px'
+            }).setOrigin(0.5);
+            slotContent.add(defaultIcon);
+        }
+
+        // 設置點擊事件 - 卸下裝備
+        slotContent.setSize(60, 60);
+        slotContent.setInteractive({ useHandCursor: true });
+        slotContent.on('pointerdown', () => {
+            const currentEquipment = this.playerEquipment[config.type];
+            if (currentEquipment) {
+                this.unequipItem(config.type);
+            }
+        });
+
+        this.equipmentSlots[config.type] = slotContent;
+    }
+
+    displayEquipmentInSlot(container, equipment) {
+        container.removeAll(true);
+
+        // 根據品質設置顏色
+        const qualityColors = [0xffffff, 0x3498db, 0xf1c40f, 0x9b59b6]; // 白藍金紫
+        const bgColor = qualityColors[equipment.quality];
+
+        // 裝備背景
+        const equipBg = this.add.rectangle(0, 0, 50, 50, bgColor, 0.3);
+        equipBg.setStrokeStyle(2, bgColor);
+        container.add(equipBg);
+
+        // 裝備圖標 (使用emoji代表)
+        const icons = {
+            weapon: '⚔️',
+            armor: '🛡️', 
+            shield: '🛡️',
+            boots: '👢'
+        };
+        
+        const icon = this.add.text(0, -5, icons[equipment.type], {
+            fontSize: '20px'
+        }).setOrigin(0.5);
+        container.add(icon);
+
+        // 強化等級顯示
+        if (equipment.level > 0) {
+            const levelText = this.add.text(0, 15, `+${equipment.level}`, {
+                fontSize: '10px',
+                fill: '#e74c3c',
+                fontWeight: 'bold'
+            }).setOrigin(0.5);
+            container.add(levelText);
+        }
+    }
+
+    createInventorySection() {
+        // 背包標題
+        this.add.text(187.5, 280, '裝備背包', {
+            fontSize: '18px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 背包背景
+        const inventoryBg = this.add.graphics();
+        inventoryBg.fillStyle(0x2c3e50, 0.8);
+        inventoryBg.fillRoundedRect(20, 310, 335, 280, 10);
+        inventoryBg.lineStyle(2, 0x34495e);
+        inventoryBg.strokeRoundedRect(20, 310, 335, 280, 10);
+
+        // 創建裝備格子
+        this.createInventoryGrid();
+
+        // 操作按鈕
+        this.createActionButtons();
+    }
+
+    createInventoryGrid() {
+        const startX = 50;
+        const startY = 340;
+        const gridSize = 60;
+        const cols = 5;
+        const rows = 3;
+
+        this.inventoryItems = [];
+
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const index = row * cols + col;
+                const x = startX + col * gridSize;
+                const y = startY + row * gridSize;
+
+                const itemSlot = this.createInventorySlot(x, y, index);
+                this.inventoryItems.push(itemSlot);
+            }
+        }
+
+        this.updateInventoryDisplay();
+    }
+
+    createInventorySlot(x, y, index) {
+        // 格子背景
+        const slotBg = this.add.graphics();
+        slotBg.fillStyle(0x34495e, 0.5);
+        slotBg.fillRoundedRect(x - 25, y - 25, 50, 50, 5);
+        slotBg.lineStyle(1, 0x7f8c8d);
+        slotBg.strokeRoundedRect(x - 25, y - 25, 50, 50, 5);
+
+        // 物品容器
+        const itemContainer = this.add.container(x, y);
+        itemContainer.setSize(50, 50);
+        itemContainer.setInteractive({ useHandCursor: true });
+
+        // 點擊事件
+        itemContainer.on('pointerdown', () => {
+            this.selectInventoryItem(index);
+        });
+
+        return {
+            background: slotBg,
+            container: itemContainer,
+            index: index
+        };
+    }
+
+    updateInventoryDisplay() {
+        this.inventoryItems.forEach((slot, index) => {
+            slot.container.removeAll(true);
+            
+            if (index < this.equipmentInventory.length) {
+                const equipment = this.equipmentInventory[index];
+                this.displayInventoryItem(slot.container, equipment);
+            }
+        });
+    }
+
+    displayInventoryItem(container, equipment) {
+        // 根據品質設置顏色
+        const qualityColors = [0xffffff, 0x3498db, 0xf1c40f, 0x9b59b6];
+        const bgColor = qualityColors[equipment.quality];
+
+        // 物品背景
+        const itemBg = this.add.rectangle(0, 0, 45, 45, bgColor, 0.3);
+        itemBg.setStrokeStyle(2, bgColor);
+        container.add(itemBg);
+
+        // 物品圖標
+        const icons = {
+            weapon: '⚔️',
+            armor: '🛡️',
+            shield: '🛡️', 
+            boots: '👢'
+        };
+
+        const icon = this.add.text(0, -5, icons[equipment.type], {
+            fontSize: '16px'
+        }).setOrigin(0.5);
+        container.add(icon);
+
+        // 強化等級
+        if (equipment.level > 0) {
+            const levelText = this.add.text(0, 12, `+${equipment.level}`, {
+                fontSize: '8px',
+                fill: '#e74c3c',
+                fontWeight: 'bold'
+            }).setOrigin(0.5);
+            container.add(levelText);
+        }
+    }
+
+    createActionButtons() {
+        // 裝備按鈕
+        const equipBtn = this.createButton(80, 620, '裝備', 0x27ae60, () => {
+            this.equipSelectedItem();
+        });
+
+        // 強化按鈕  
+        const enhanceBtn = this.createButton(187.5, 620, '強化', 0xe74c3c, () => {
+            this.enhanceSelectedItem();
+        });
+
+        // 合成按鈕
+        const synthesizeBtn = this.createButton(295, 620, '合成', 0xf39c12, () => {
+            this.synthesizeItems();
+        });
+    }
+
+    createButton(x, y, text, color, callback) {
+        const buttonBg = this.add.rectangle(0, 0, 80, 35, color, 1);
+        buttonBg.setStrokeStyle(2, color - 0x111111);
+        
+        const buttonText = this.add.text(0, 0, text, {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const button = this.add.container(x, y, [buttonBg, buttonText]);
+        button.setSize(80, 35);
+        button.setInteractive({ useHandCursor: true });
+        
+        button.on('pointerover', () => {
+            buttonBg.setFillStyle(color - 0x222222);
+            button.setScale(1.05);
+        });
+
+        button.on('pointerout', () => {
+            buttonBg.setFillStyle(color);
+            button.setScale(1);
+        });
+
+        button.on('pointerdown', () => {
+            button.setScale(0.95);
+            this.time.delayedCall(100, () => {
+                button.setScale(1.05);
+                callback();
+            });
+        });
+
+        return button;
+    }
+
+    selectInventoryItem(index) {
+        if (index < this.equipmentInventory.length) {
+            this.selectedInventoryItem = this.equipmentInventory[index];
+            this.highlightSelectedItem(index);
+        }
+    }
+
+    highlightSelectedItem(index) {
+        // 重置所有高亮
+        this.inventoryItems.forEach(slot => {
+            slot.background.clear();
+            slot.background.fillStyle(0x34495e, 0.5);
+            slot.background.fillRoundedRect(slot.container.x - 25, slot.container.y - 25, 50, 50, 5);
+            slot.background.lineStyle(1, 0x7f8c8d);
+            slot.background.strokeRoundedRect(slot.container.x - 25, slot.container.y - 25, 50, 50, 5);
+        });
+
+        // 高亮選中的物品
+        if (index < this.inventoryItems.length) {
+            const slot = this.inventoryItems[index];
+            slot.background.clear();
+            slot.background.fillStyle(0x34495e, 0.5);
+            slot.background.fillRoundedRect(slot.container.x - 25, slot.container.y - 25, 50, 50, 5);
+            slot.background.lineStyle(3, 0xe74c3c);
+            slot.background.strokeRoundedRect(slot.container.x - 25, slot.container.y - 25, 50, 50, 5);
+        }
+    }
+
+    equipSelectedItem() {
+        if (!this.selectedInventoryItem) {
+            this.showMessage('請先選擇要裝備的物品', 0xe74c3c);
+            return;
+        }
+
+        const result = GameDatabase.equipItem(this.selectedInventoryItem);
+        this.playerEquipment = result.equipment;
+        this.equipmentInventory = result.inventory;
+        this.selectedInventoryItem = null;
+
+        this.refreshDisplay();
+        this.showMessage('裝備成功！', 0x27ae60);
+    }
+
+    unequipItem(equipmentType) {
+        if (!this.playerEquipment[equipmentType]) {
+            return;
+        }
+
+        const result = GameDatabase.unequipItem(equipmentType);
+        this.playerEquipment = result.equipment;
+        this.equipmentInventory = result.inventory;
+
+        this.refreshDisplay();
+        this.showMessage('卸下裝備成功！', 0x27ae60);
+    }
+
+    enhanceSelectedItem() {
+        if (!this.selectedInventoryItem) {
+            this.showMessage('請先選擇要強化的裝備', 0xe74c3c);
+            return;
+        }
+
+        if (this.selectedInventoryItem.level >= 10) {
+            this.showMessage('裝備已達最高強化等級！', 0xe67e22);
+            return;
+        }
+
+        const cost = (this.selectedInventoryItem.level + 1) * 100;
+        const currentMoney = GameDatabase.loadMoney();
+
+        if (currentMoney < cost) {
+            this.showMessage(`金錢不足！需要 ${cost} 金錢`, 0xe74c3c);
+            return;
+        }
+
+        // 強化成功
+        GameDatabase.spendMoney(cost);
+        this.selectedInventoryItem.level += 1;
+        GameDatabase.saveEquipmentInventory(this.equipmentInventory);
+
+        this.refreshDisplay();
+        this.showMessage(`強化成功！等級提升至 +${this.selectedInventoryItem.level}`, 0x27ae60);
+    }
+
+    synthesizeItems() {
+        // 收集所有可合成的裝備
+        const synthesizableGroups = this.findSynthesizableGroups();
+        
+        if (synthesizableGroups.length === 0) {
+            this.showMessage('沒有可合成的裝備！需要兩個相同類型、名稱和品質的裝備', 0xe74c3c);
+            return;
+        }
+
+        // 顯示合成選項
+        this.showSynthesizeOptions(synthesizableGroups);
+    }
+
+    findSynthesizableGroups() {
+        const groups = {};
+        
+        // 按類型、名稱、品質分組
+        this.equipmentInventory.forEach((equipment, index) => {
+            if (equipment.quality < 3) { // 只有非紫色品質才能合成
+                const key = `${equipment.type}_${equipment.name}_${equipment.quality}`;
+                if (!groups[key]) {
+                    groups[key] = [];
+                }
+                groups[key].push({ equipment, index });
+            }
+        });
+
+        // 只返回有2個或以上相同裝備的組
+        return Object.entries(groups)
+            .filter(([key, items]) => items.length >= 2)
+            .map(([key, items]) => ({
+                key,
+                items: items.slice(0, 2), // 只取前兩個用來合成
+                result: this.previewSynthesizeResult(items[0].equipment)
+            }));
+    }
+
+    previewSynthesizeResult(equipment) {
+        return {
+            type: equipment.type,
+            name: GameDatabase.getUpgradedEquipmentName(equipment.name, equipment.quality + 1),
+            quality: equipment.quality + 1,
+            level: 0,
+            baseAttack: equipment.baseAttack ? Math.floor(equipment.baseAttack * 1.5) : undefined,
+            baseDefense: equipment.baseDefense ? Math.floor(equipment.baseDefense * 1.5) : undefined,
+            baseSpeed: equipment.baseSpeed ? Math.floor(equipment.baseSpeed * 1.5) : undefined
+        };
+    }
+
+    showSynthesizeOptions(groups) {
+        // 創建合成選項界面
+        const overlay = this.add.graphics();
+        overlay.fillStyle(0x000000, 0.7);
+        overlay.fillRect(0, 0, 375, 667);
+
+        const panel = this.add.graphics();
+        panel.fillStyle(0x2c3e50, 0.95);
+        panel.fillRoundedRect(50, 150, 275, 350, 10);
+        panel.lineStyle(3, 0x3498db);
+        panel.strokeRoundedRect(50, 150, 275, 350, 10);
+
+        this.add.text(187.5, 180, '選擇要合成的裝備', {
+            fontSize: '18px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 顯示合成選項
+        groups.forEach((group, index) => {
+            const y = 220 + index * 60;
+            this.createSynthesizeOption(group, 187.5, y, overlay, panel);
+        });
+
+        // 關閉按鈕
+        const closeBtn = this.createButton(187.5, 460, '關閉', 0x95a5a6, () => {
+            overlay.destroy();
+            panel.destroy();
+        });
+    }
+
+    createSynthesizeOption(group, x, y, overlay, panel) {
+        const equipment = group.items[0].equipment;
+        const result = group.result;
+
+        // 合成選項背景
+        const optionBg = this.add.graphics();
+        optionBg.fillStyle(0x34495e, 0.8);
+        optionBg.fillRoundedRect(x - 120, y - 20, 240, 40, 5);
+        optionBg.lineStyle(1, 0x7f8c8d);
+        optionBg.strokeRoundedRect(x - 120, y - 20, 240, 40, 5);
+
+        // 品質顏色
+        const qualityColors = ['#ffffff', '#3498db', '#f1c40f', '#9b59b6'];
+        const currentQualityColor = qualityColors[equipment.quality];
+        const nextQualityColor = qualityColors[result.quality];
+
+        // 顯示合成信息
+        const text = `${equipment.name} (x2) → ${result.name}`;
+        const optionText = this.add.text(x, y, text, {
+            fontSize: '12px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        // 設置互動
+        optionBg.setInteractive();
+        optionBg.on('pointerdown', () => {
+            this.performSynthesize(group);
+            overlay.destroy();
+            panel.destroy();
+        });
+
+        optionBg.on('pointerover', () => {
+            optionBg.clear();
+            optionBg.fillStyle(0x5d6d7e, 0.8);
+            optionBg.fillRoundedRect(x - 120, y - 20, 240, 40, 5);
+            optionBg.lineStyle(2, 0x3498db);
+            optionBg.strokeRoundedRect(x - 120, y - 20, 240, 40, 5);
+        });
+
+        optionBg.on('pointerout', () => {
+            optionBg.clear();
+            optionBg.fillStyle(0x34495e, 0.8);
+            optionBg.fillRoundedRect(x - 120, y - 20, 240, 40, 5);
+            optionBg.lineStyle(1, 0x7f8c8d);
+            optionBg.strokeRoundedRect(x - 120, y - 20, 240, 40, 5);
+        });
+    }
+
+    performSynthesize(group) {
+        const item1 = group.items[0];
+        const item2 = group.items[1];
+
+        // 創建新裝備
+        const newEquipment = GameDatabase.synthesizeEquipment(item1.equipment, item2.equipment);
+        
+        if (newEquipment) {
+            // 移除原有的兩個裝備
+            this.equipmentInventory.splice(Math.max(item1.index, item2.index), 1);
+            this.equipmentInventory.splice(Math.min(item1.index, item2.index), 1);
+            
+            // 添加新裝備
+            this.equipmentInventory.push(newEquipment);
+            
+            // 保存數據
+            GameDatabase.saveEquipmentInventory(this.equipmentInventory);
+            
+            // 刷新顯示
+            this.refreshDisplay();
+            
+            this.showMessage(`合成成功！獲得 ${newEquipment.name}`, 0x27ae60);
+        } else {
+            this.showMessage('合成失敗！', 0xe74c3c);
+        }
+    }
+
+    refreshDisplay() {
+        // 更新金錢顯示
+        this.moneyText.setText(`💰 ${GameDatabase.loadMoney()}`);
+
+        // 更新裝備槽
+        Object.keys(this.equipmentSlots).forEach(type => {
+            const equipment = this.playerEquipment[type];
+            const slot = this.equipmentSlots[type];
+            
+            slot.removeAll(true);
+            
+            if (equipment) {
+                this.displayEquipmentInSlot(slot, equipment);
+            } else {
+                const icons = { weapon: '⚔️', armor: '🛡️', shield: '🛡️', boots: '👢' };
+                const defaultIcon = this.add.text(0, 0, icons[type], {
+                    fontSize: '24px'
+                }).setOrigin(0.5);
+                slot.add(defaultIcon);
+            }
+        });
+
+        // 更新背包顯示
+        this.updateInventoryDisplay();
+
+        // 更新玩家狀態
+        this.updatePlayerStats();
+    }
+
+    updatePlayerStats() {
+        let totalAttack = GameDatabase.loadAttack();
+        let totalDefense = GameDatabase.loadDefense();
+
+        // 計算裝備加成
+        Object.values(this.playerEquipment).forEach(equipment => {
+            if (equipment) {
+                if (equipment.baseAttack) {
+                    totalAttack += equipment.baseAttack + (equipment.level * 2);
+                }
+                if (equipment.baseDefense) {
+                    totalDefense += equipment.baseDefense + (equipment.level * 1);
+                }
+            }
+        });
+
+        // 顯示玩家狀態
+        if (this.playerStatsText) {
+            this.playerStatsText.destroy();
+        }
+
+        this.playerStatsText = this.add.text(187.5, 175, `攻擊: ${totalAttack}\n防禦: ${totalDefense}`, {
+            fontSize: '12px',
+            fill: '#ecf0f1',
+            fontWeight: 'bold',
+            align: 'center'
+        }).setOrigin(0.5);
+    }
+
+    showMessage(text, color = 0xffffff) {
+        if (this.messageText) {
+            this.messageText.destroy();
+        }
+
+        this.messageText = this.add.text(187.5, 50, text, {
+            fontSize: '14px',
+            fill: color,
+            fontWeight: 'bold',
+            backgroundColor: 0x000000,
+            padding: { x: 10, y: 5 }
+        }).setOrigin(0.5);
+
+        this.time.delayedCall(2000, () => {
+            if (this.messageText) {
+                this.messageText.destroy();
+                this.messageText = null;
+            }
+        });
     }
 }
 
@@ -1689,7 +2519,7 @@ const config = {
         width: 375,
         height: 667
     },
-    scene: [StartScene, UpgradeScene, GameScene]
+    scene: [StartScene, UpgradeScene, EquipmentScene, GameScene]
 };
 
 // 啟動遊戲
