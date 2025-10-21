@@ -100,23 +100,10 @@ const GameDatabase = {
         if (saved) {
             return JSON.parse(saved);
         } else {
-            // 初始裝備 - 給玩家一些基礎裝備
-            const initialEquipment = [
-                { id: 1, type: 'weapon', name: '生鏽劍', quality: 0, level: 0, baseAttack: 5 },
-                { id: 2, type: 'armor', name: '布甲', quality: 0, level: 0, baseDefense: 4 },
-                { id: 3, type: 'shield', name: '木盾', quality: 0, level: 0, baseDefense: 3 },
-                { id: 4, type: 'boots', name: '草鞋', quality: 0, level: 0, baseDefense: 2 },
-                { id: 5, type: 'weapon', name: '生鏽劍', quality: 0, level: 0, baseAttack: 5 },
-                { id: 6, type: 'weapon', name: '鐵劍', quality: 1, level: 0, baseAttack: 8 },
-                { id: 7, type: 'armor', name: '布甲', quality: 0, level: 0, baseDefense: 4 },
-                { id: 8, type: 'shield', name: '木盾', quality: 0, level: 0, baseDefense: 3 },
-                { id: 9, type: 'boots', name: '草鞋', quality: 0, level: 0, baseDefense: 2 },
-                { id: 10, type: 'armor', name: '皮甲', quality: 1, level: 0, baseDefense: 6 },
-                { id: 11, type: 'shield', name: '鐵盾', quality: 1, level: 0, baseDefense: 5 },
-                { id: 12, type: 'boots', name: '皮靴', quality: 1, level: 0, baseDefense: 3 }
-            ];
-            this.saveEquipmentInventory(initialEquipment);
-            return initialEquipment;
+            // 初始為空的裝備背包
+            const emptyInventory = [];
+            this.saveEquipmentInventory(emptyInventory);
+            return emptyInventory;
         }
     },
     
@@ -965,9 +952,9 @@ class EquipmentScene extends Phaser.Scene {
         // 背包背景
         const inventoryBg = this.add.graphics();
         inventoryBg.fillStyle(0x2c3e50, 0.8);
-        inventoryBg.fillRoundedRect(20, 310, 335, 280, 10);
+        inventoryBg.fillRoundedRect(20, 310, 335, 340, 10); // 高度增加到380以容納兩排按鈕
         inventoryBg.lineStyle(2, 0x34495e);
-        inventoryBg.strokeRoundedRect(20, 310, 335, 280, 10);
+        inventoryBg.strokeRoundedRect(20, 310, 335, 340, 10);
 
         // 創建裝備格子
         this.createInventoryGrid();
@@ -977,11 +964,12 @@ class EquipmentScene extends Phaser.Scene {
     }
 
     createInventoryGrid() {
-        const startX = 50;
-        const startY = 340;
         const gridSize = 60;
         const cols = 5;
-        const rows = 3;
+        const rows = 4; // 改成4排
+        const totalWidth = (cols - 1) * gridSize; // 計算總寬度
+        const startX = (375 - totalWidth) / 2; // 水平置中
+        const startY = 340;
 
         this.inventoryItems = [];
 
@@ -1070,19 +1058,26 @@ class EquipmentScene extends Phaser.Scene {
     }
 
     createActionButtons() {
+        // 第一排按鈕
         // 裝備按鈕
-        const equipBtn = this.createButton(80, 620, '裝備', 0x27ae60, () => {
+        const equipBtn = this.createButton(140, 580, '裝備', 0x27ae60, () => {
             this.equipSelectedItem();
         });
 
         // 強化按鈕  
-        const enhanceBtn = this.createButton(187.5, 620, '強化', 0xe74c3c, () => {
+        const enhanceBtn = this.createButton(235, 580, '強化', 0xe74c3c, () => {
             this.enhanceSelectedItem();
         });
 
+        // 第二排按鈕 (Y=620)
         // 合成按鈕
-        const synthesizeBtn = this.createButton(295, 620, '合成', 0xf39c12, () => {
+        const synthesizeBtn = this.createButton(140, 620, '合成', 0xf39c12, () => {
             this.synthesizeItems();
+        });
+
+        // 丟棄按鈕
+        const discardBtn = this.createButton(235, 620, '丟棄', 0x95a5a6, () => {
+            this.discardSelectedItem();
         });
     }
 
@@ -1251,9 +1246,7 @@ class EquipmentScene extends Phaser.Scene {
         console.log('當前裝備背包:', this.equipmentInventory); // 調試信息
         
         if (synthesizableGroups.length === 0) {
-            // 如果沒有可合成的裝備，為測試目的添加一些
-            this.addTestEquipmentForSynthesis();
-            this.showMessage('已添加測試裝備！請再次嘗試合成', 0xf39c12);
+            this.showMessage('沒有可合成的裝備！需要兩個相同類型、名稱和品質的裝備', 0xe74c3c);
             return;
         }
 
@@ -1261,21 +1254,99 @@ class EquipmentScene extends Phaser.Scene {
         this.showSynthesizeOptions(synthesizableGroups);
     }
 
-    addTestEquipmentForSynthesis() {
-        // 添加一些可以合成的測試裝備
-        const testEquipment = [
-            { id: Date.now() + 1, type: 'weapon', name: '測試劍', quality: 0, level: 0, baseAttack: 3 },
-            { id: Date.now() + 2, type: 'weapon', name: '測試劍', quality: 0, level: 0, baseAttack: 3 },
-            { id: Date.now() + 3, type: 'armor', name: '測試甲', quality: 0, level: 0, baseDefense: 2 },
-            { id: Date.now() + 4, type: 'armor', name: '測試甲', quality: 0, level: 0, baseDefense: 2 }
-        ];
+    discardSelectedItem() {
+        if (!this.selectedInventoryItem) {
+            this.showMessage('請先選擇要丟棄的裝備', 0xe74c3c);
+            return;
+        }
+
+        // 顯示確認對話框
+        this.showDiscardConfirmation(this.selectedInventoryItem);
+    }
+
+    showDiscardConfirmation(equipment) {
+        // 創建確認對話框
+        const overlay = this.add.graphics();
+        overlay.fillStyle(0x000000, 0.8);
+        overlay.fillRect(0, 0, 375, 667);
+        overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, 375, 667), Phaser.Geom.Rectangle.Contains);
         
-        testEquipment.forEach(equipment => {
-            this.equipmentInventory.push(equipment);
+        overlay.on('pointerdown', () => {
+            // 空的處理器，阻止事件冒泡
         });
+
+        const panel = this.add.graphics();
+        panel.fillStyle(0x2c3e50, 0.95);
+        panel.fillRoundedRect(75, 250, 225, 167, 10);
+        panel.lineStyle(3, 0xe74c3c);
+        panel.strokeRoundedRect(75, 250, 225, 167, 10);
+        panel.setInteractive(new Phaser.Geom.Rectangle(75, 250, 225, 167), Phaser.Geom.Rectangle.Contains);
         
-        GameDatabase.saveEquipmentInventory(this.equipmentInventory);
-        this.refreshDisplay();
+        panel.on('pointerdown', () => {
+            // 空的處理器，阻止事件冒泡
+        });
+
+        // 確認訊息
+        const titleText = this.add.text(187.5, 280, '確認丟棄', {
+            fontSize: '18px',
+            fill: '#e74c3c',
+            fontWeight: 'bold'
+        }).setOrigin(0.5);
+
+        const confirmText = this.add.text(187.5, 310, `確定要丟棄 ${equipment.name}`, {
+            fontSize: '14px',
+            fill: '#ecf0f1',
+            align: 'center'
+        }).setOrigin(0.5);
+
+        const warningText = this.add.text(187.5, 330, '此操作無法復原！', {
+            fontSize: '12px',
+            fill: '#f39c12',
+            fontStyle: 'italic'
+        }).setOrigin(0.5);
+
+        // 收集所有要銷毀的元素
+        const elementsToDestroy = [overlay, panel, titleText, confirmText, warningText];
+
+        // 確認按鈕
+        const confirmBtn = this.createButton(130, 370, '確認', 0xe74c3c, () => {
+            this.performDiscard(equipment);
+            elementsToDestroy.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
+        });
+
+        // 取消按鈕
+        const cancelBtn = this.createButton(245, 370, '取消', 0x95a5a6, () => {
+            elementsToDestroy.forEach(element => {
+                if (element && element.destroy) {
+                    element.destroy();
+                }
+            });
+        });
+
+        elementsToDestroy.push(confirmBtn, cancelBtn);
+    }
+
+    performDiscard(equipment) {
+        // 從背包中移除裝備
+        const index = this.equipmentInventory.findIndex(item => item.id === equipment.id);
+        if (index !== -1) {
+            this.equipmentInventory.splice(index, 1);
+            
+            // 保存數據
+            GameDatabase.saveEquipmentInventory(this.equipmentInventory);
+            
+            // 清除選中狀態
+            this.selectedInventoryItem = null;
+            
+            // 刷新顯示
+            this.refreshDisplay();
+            
+            this.showMessage(`已丟棄 ${equipment.name}`, 0x95a5a6);
+        }
     }
 
     findSynthesizableGroups() {
