@@ -110,10 +110,18 @@ const GameDatabase = {
     // 添加裝備到背包
     addEquipmentToInventory(equipment) {
         const inventory = this.loadEquipmentInventory();
+        
+        // 檢查背包是否已滿 (最大20個，對應5x4格子)
+        if (inventory.length >= 20) {
+            console.log('背包已滿，無法添加裝備');
+            return false; // 返回false表示添加失敗
+        }
+        
         equipment.id = Date.now() + Math.random(); // 生成唯一ID
         inventory.push(equipment);
         this.saveEquipmentInventory(inventory);
-        return inventory;
+        console.log(`成功添加裝備到背包: ${equipment.name}`);
+        return true; // 返回true表示添加成功
     },
     
     // 從背包移除裝備
@@ -193,23 +201,76 @@ const GameDatabase = {
         }
         
         // 創建新的高品質裝備
+        const newQuality = equipment1.quality + 1;
+        const newName = this.getUpgradedEquipmentName(equipment1.name, newQuality);
+        
+        // 根據新品質設定屬性值
         const newEquipment = {
             id: Date.now() + Math.random(),
             type: equipment1.type,
-            name: this.getUpgradedEquipmentName(equipment1.name, equipment1.quality + 1),
-            quality: equipment1.quality + 1,
+            name: newName,
+            quality: newQuality,
             level: 0,
-            baseAttack: equipment1.baseAttack ? Math.floor(equipment1.baseAttack * 1.5) : undefined,
-            baseDefense: equipment1.baseDefense ? Math.floor(equipment1.baseDefense * 1.5) : undefined
+            enhancement: 0
         };
+        
+        // 根據裝備類型和品質設定基礎屬性
+        if (equipment1.type === 'weapon') {
+            const attackValues = [5, 8, 12, 18]; // 白、藍、金、紫
+            newEquipment.baseAttack = attackValues[newQuality] || attackValues[3];
+        } else {
+            const defenseValues = {
+                'armor': [4, 6, 10, 15],
+                'shield': [3, 5, 8, 12], 
+                'boots': [2, 4, 6, 10]
+            };
+            const values = defenseValues[equipment1.type] || defenseValues['armor'];
+            newEquipment.baseDefense = values[newQuality] || values[3];
+        }
         
         return newEquipment;
     },
     
     // 根據品質獲取升級後的裝備名稱
     getUpgradedEquipmentName(baseName, quality) {
-        const qualityPrefixes = ['', '精良', '稀有', '史詩'];
+        // 裝備升級路線圖
+        const upgradeMap = {
+            // 武器系列
+            '生鏽劍': ['生鏽劍', '鐵劍', '黃金劍', '傳說劍'],
+            '鐵劍': ['生鏽劍', '鐵劍', '黃金劍', '傳說劍'],
+            '黃金劍': ['生鏽劍', '鐵劍', '黃金劍', '傳說劍'],
+            '傳說劍': ['生鏽劍', '鐵劍', '黃金劍', '傳說劍'],
+            
+            // 護甲系列  
+            '布甲': ['布甲', '鐵甲', '黃金甲', '傳說甲'],
+            '鐵甲': ['布甲', '鐵甲', '黃金甲', '傳說甲'],
+            '黃金甲': ['布甲', '鐵甲', '黃金甲', '傳說甲'],
+            '傳說甲': ['布甲', '鐵甲', '黃金甲', '傳說甲'],
+            
+            // 盾牌系列
+            '木盾': ['木盾', '鐵盾', '黃金盾', '傳說盾'],
+            '鐵盾': ['木盾', '鐵盾', '黃金盾', '傳說盾'],
+            '黃金盾': ['木盾', '鐵盾', '黃金盾', '傳說盾'],
+            '傳說盾': ['木盾', '鐵盾', '黃金盾', '傳說盾'],
+            
+            // 靴子系列
+            '草靴': ['草靴', '鐵靴', '黃金靴', '傳說靴'],
+            '鐵靴': ['草靴', '鐵靴', '黃金靴', '傳說靴'],
+            '黃金靴': ['草靴', '鐵靴', '黃金靴', '傳說靴'],
+            '傳說靴': ['草靴', '鐵靴', '黃金靴', '傳說靴']
+        };
+        
+        // 移除品質前綴獲取基本名稱
         const cleanName = baseName.replace(/^(精良|稀有|史詩)\s*/, '');
+        
+        // 查找升級路線
+        const upgradePath = upgradeMap[cleanName];
+        if (upgradePath && quality >= 0 && quality < upgradePath.length) {
+            return upgradePath[quality];
+        }
+        
+        // 如果找不到升級路線，使用舊邏輯（向下兼容）
+        const qualityPrefixes = ['', '精良', '稀有', '史詩'];
         return quality > 0 ? `${qualityPrefixes[quality]} ${cleanName}` : cleanName;
     }
 };
@@ -1161,7 +1222,7 @@ class EquipmentScene extends Phaser.Scene {
         }).setOrigin(0.5);
     }
 
-    highlightSelectedItem(index) {
+    clearAllHighlights() {
         // 重置所有高亮
         this.inventoryItems.forEach(slot => {
             slot.background.clear();
@@ -1170,9 +1231,14 @@ class EquipmentScene extends Phaser.Scene {
             slot.background.lineStyle(1, 0x7f8c8d);
             slot.background.strokeRoundedRect(slot.container.x - 25, slot.container.y - 25, 50, 50, 5);
         });
+    }
+
+    highlightSelectedItem(index) {
+        // 先清除所有高亮
+        this.clearAllHighlights();
 
         // 高亮選中的物品
-        if (index < this.inventoryItems.length) {
+        if (index < this.inventoryItems.length && index >= 0) {
             const slot = this.inventoryItems[index];
             slot.background.clear();
             slot.background.fillStyle(0x34495e, 0.5);
@@ -1192,6 +1258,9 @@ class EquipmentScene extends Phaser.Scene {
         this.playerEquipment = result.equipment;
         this.equipmentInventory = result.inventory;
         this.selectedInventoryItem = null;
+
+        // 清除所有高亮
+        this.clearAllHighlights();
 
         this.refreshDisplay();
         this.showMessage('裝備成功！', 0x27ae60);
@@ -1341,6 +1410,9 @@ class EquipmentScene extends Phaser.Scene {
             
             // 清除選中狀態
             this.selectedInventoryItem = null;
+            
+            // 清除所有高亮
+            this.clearAllHighlights();
             
             // 刷新顯示
             this.refreshDisplay();
@@ -1675,6 +1747,10 @@ class EquipmentScene extends Phaser.Scene {
             // 保存數據
             GameDatabase.saveEquipmentInventory(this.equipmentInventory);
             
+            // 清除選中狀態和高亮
+            this.selectedInventoryItem = null;
+            this.clearAllHighlights();
+            
             // 刷新顯示
             this.refreshDisplay();
             
@@ -1705,6 +1781,10 @@ class EquipmentScene extends Phaser.Scene {
             
             // 保存數據
             GameDatabase.saveEquipmentInventory(this.equipmentInventory);
+            
+            // 清除選中狀態和高亮
+            this.selectedInventoryItem = null;
+            this.clearAllHighlights();
             
             // 刷新顯示
             this.refreshDisplay();
@@ -2098,6 +2178,40 @@ class GameScene extends Phaser.Scene {
         // 遊戲主迴圈（目前不需要持續更新的邏輯）
     }
 
+    // 處理裝備事件
+    handleEquipmentEvent(event) {
+        // 更新關卡
+        this.currentLevel++;
+        
+        // 更新關卡顯示
+        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        
+        // 嘗試添加裝備到背包
+        const equipment = event.equipment;
+        const added = GameDatabase.addEquipmentToInventory(equipment);
+        
+        // 準備訊息
+        const qualityColors = ['⚪', '🔵', '🟡', '🟣']; // 白、藍、金、紫
+        const qualityColor = qualityColors[equipment.quality] || '⚪';
+        
+        let resultMessage = "";
+        if (added) {
+            this.playSound('eventPositive');
+            resultMessage = `⚔️ 獲得裝備：${qualityColor} ${equipment.name} (+${equipment.enhancement})\n\n💰 總金錢: ${this.playerMoney}`;
+        } else {
+            this.playSound('eventNegative');
+            resultMessage = `📦 背包已滿！無法獲得 ${qualityColor} ${equipment.name}！\n\n💰 總金錢: ${this.playerMoney}`;
+        }
+        
+        // 顯示事件結果
+        this.eventText.setText(
+            `${event.description}\n\n${event.effect.message}\n\n${resultMessage}`
+        );
+        
+        // 恢復下一關按鈕
+        this.nextLevelButton.setVisible(true);
+    }
+
     // 觸發隨機事件
     triggerRandomEvent() {
         if (this.playerHealth <= 0) {
@@ -2119,6 +2233,12 @@ class GameScene extends Phaser.Scene {
         // 檢查是否為戰鬥類型事件
         if (randomEvent.type === "battle") {
             this.startBattle(randomEvent);
+            return;
+        }
+        
+        // 檢查是否為裝備類型事件
+        if (randomEvent.type === "equipment") {
+            this.handleEquipmentEvent(randomEvent);
             return;
         }
         
@@ -2183,11 +2303,14 @@ class GameScene extends Phaser.Scene {
         this.playerHealth = Math.max(0, Math.min(this.maxHealth, this.playerHealth));
         
         // 播放事件音效（如果還沒播放的話）
+        let soundPlayed = false;
         if (maxHealthChange === 0) {
             if (healthChange > 0 || fullHeal) {
                 this.playSound('eventPositive');
+                soundPlayed = true;
             } else if (healthChange < 0) {
                 this.playSound('eventNegative');
+                soundPlayed = true;
             }
         }
         

@@ -91,7 +91,7 @@ const gameEvents = [
     },
     {
         name: "詛咒石碑",
-        description: "你觸碰了一個古老的詛咒石碑，召喚出邪惡守護者！",
+        description: "你觸碰了古老詛咒石碑，召喚出邪惡守護者！",
         type: "battle",
         monster: {
             name: "石碑守護者",
@@ -112,7 +112,7 @@ const gameEvents = [
     },
     {
         name: "古老神廟",
-        description: "你進入了一座古老的神廟，感受到神聖的力量。",
+        description: "你進入古老神廟，感受到神聖的力量。",
         effect: { health: 30, maxHealth: 15, message: "最大生命值增加 15 點，並恢復 30 點生命值！" },
         weight: 4   // 稀有的強化事件
     },
@@ -139,6 +139,246 @@ const gameEvents = [
         description: "死神從陰影中現身，舉起了他的鐮刀...",
         effect: { instantDeath: true, message: "💀 死神奪走了你的生命！" },
         weight: 1   // 極稀有的即死事件
+    },
+    {
+        name: "廢棄武器庫",
+        description: "你發現廢棄武器庫，裡面有些還能用的裝備。",
+        type: "equipment",
+        equipment: {
+            type: 'weapon',
+            name: '生鏽劍',
+            quality: 0,
+            level: 0,
+            enhancement: 0,
+            baseAttack: 5
+        },
+        effect: { message: "獲得了 生鏽劍！" },
+        weight: 8   // 中等機率的裝備事件
+    },
+    {
+        name: "遺棄護甲",
+        description: "路邊有套被丟棄的舊護甲，還能穿。",
+        type: "equipment",
+        equipment: {
+            type: 'armor',
+            name: '布甲',
+            quality: 0,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 4
+        },
+        effect: { message: "獲得了 布甲！" },
+        weight: 8   // 中等機率的裝備事件
+    },
+    {
+        name: "破舊盾牌",
+        description: "你在戰場遺跡找到還能用的盾牌。",
+        type: "equipment",
+        equipment: {
+            type: 'shield',
+            name: '木盾',
+            quality: 0,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 3
+        },
+        effect: { message: "獲得了 木盾！" },
+        weight: 8   // 中等機率的裝備事件
+    },
+    {
+        name: "舊靴子",
+        description: "路邊有人遺失的靴子，看起來還能穿。",
+        type: "equipment",
+        equipment: {
+            type: 'boots',
+            name: '草靴',
+            quality: 0,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 2
+        },
+        effect: { message: "獲得了 草靴！" },
+        weight: 8   // 中等機率的裝備事件
+    },
+    {
+        name: "精良武器店",
+        description: "你發現隱密武器店，老闆贈送精良武器。",
+        type: "equipment",
+        equipment: {
+            type: 'weapon',
+            name: '鐵劍',
+            quality: 1,
+            level: 0,
+            enhancement: 0,
+            baseAttack: 8
+        },
+        effect: { message: "獲得了 精良 鐵劍！" },
+        weight: 4   // 較稀有的藍色裝備事件
+    },
+    {
+        name: "騎士遺物",
+        description: "你在古老墓穴發現騎士護甲。",
+        type: "equipment",
+        equipment: {
+            type: 'armor',
+            name: '鐵甲',
+            quality: 1,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 6
+        },
+        effect: { message: "獲得了 精良 鐵甲！" },
+        weight: 4   // 較稀有的藍色裝備事件
+    },
+    {
+        name: "鐵匠的禮物",
+        description: "感激的鐵匠送你親手打造的精良盾牌。",
+        type: "equipment",
+        equipment: {
+            type: 'shield',
+            name: '鐵盾',
+            quality: 1,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 5
+        },
+        effect: { message: "獲得了 精良 鐵盾！" },
+        weight: 4   // 較稀有的藍色裝備事件
+    },
+    {
+        name: "工匠靴子",
+        description: "你在工匠作坊發現精良靴子。",
+        type: "equipment",
+        equipment: {
+            type: 'boots',
+            name: '鐵靴',
+            quality: 1,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 4
+        },
+        effect: { message: "獲得了 精良 鐵靴！" },
+        weight: 4   // 較稀有的藍色裝備事件
+    },
+    {
+        name: "黃金寶箱",
+        description: "你發現金光閃閃的寶箱，裡面有稀有裝備！",
+        type: "equipment",
+        equipment: {
+            type: 'weapon',
+            name: '黃金劍',
+            quality: 2,
+            level: 0,
+            enhancement: 0,
+            baseAttack: 12
+        },
+        effect: { message: "獲得了 稀有 黃金劍！" },
+        weight: 2   // 稀有的金色裝備事件
+    },
+    {
+        name: "黃金護甲",
+        description: "你在寶庫發現金光閃閃的護甲！",
+        type: "equipment",
+        equipment: {
+            type: 'armor',
+            name: '黃金甲',
+            quality: 2,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 10
+        },
+        effect: { message: "獲得了 稀有 黃金甲！" },
+        weight: 2   // 稀有的金色裝備事件
+    },
+    {
+        name: "黃金盾牌",
+        description: "你在寶庫發現金光閃閃的盾牌！",
+        type: "equipment",
+        equipment: {
+            type: 'shield',
+            name: '黃金盾',
+            quality: 2,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 8
+        },
+        effect: { message: "獲得了 稀有 黃金盾！" },
+        weight: 2   // 稀有的金色裝備事件
+    },
+    {
+        name: "黃金靴子",
+        description: "你在寶庫發現金光閃閃的靴子！",
+        type: "equipment",
+        equipment: {
+            type: 'boots',
+            name: '黃金靴',
+            quality: 2,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 6
+        },
+        effect: { message: "獲得了 稀有 黃金靴！" },
+        weight: 2   // 稀有的金色裝備事件
+    },
+    {
+        name: "傳說遺跡",
+        description: "你在古老遺跡深處發現傳說級裝備！",
+        type: "equipment",
+        equipment: {
+            type: 'armor',
+            name: '傳說甲',
+            quality: 3,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 15
+        },
+        effect: { message: "獲得了 史詩 傳說甲！" },
+        weight: 1   // 極稀有的紫色裝備事件
+    },
+    {
+        name: "傳說武器庫",
+        description: "你在遺跡深處發現傳說級武器！",
+        type: "equipment",
+        equipment: {
+            type: 'weapon',
+            name: '傳說劍',
+            quality: 3,
+            level: 0,
+            enhancement: 0,
+            baseAttack: 18
+        },
+        effect: { message: "獲得了 史詩 傳說劍！" },
+        weight: 1   // 極稀有的紫色裝備事件
+    },
+    {
+        name: "傳說盾牌",
+        description: "你在遺跡深處發現傳說級盾牌！",
+        type: "equipment",
+        equipment: {
+            type: 'shield',
+            name: '傳說盾',
+            quality: 3,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 12
+        },
+        effect: { message: "獲得了 史詩 傳說盾！" },
+        weight: 1   // 極稀有的紫色裝備事件
+    },
+    {
+        name: "傳說靴子",
+        description: "你在遺跡深處發現傳說級靴子！",
+        type: "equipment",
+        equipment: {
+            type: 'boots',
+            name: '傳說靴',
+            quality: 3,
+            level: 0,
+            enhancement: 0,
+            baseDefense: 10
+        },
+        effect: { message: "獲得了 史詩 傳說靴！" },
+        weight: 1   // 極稀有的紫色裝備事件
     },
     {
         name: "盜賊襲擊",
