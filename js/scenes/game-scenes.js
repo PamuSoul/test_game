@@ -1270,6 +1270,22 @@ class GameScene extends Phaser.Scene {
                 .fillRect(0, 0, 375, 667)
                 .generateTexture('backgroundImg', 375, 667);
         }
+        
+        // 檢查血量條背景
+        if (!this.textures.exists('healthBarBgImg')) {
+            this.add.graphics()
+                .fillStyle(0xe74c3c)
+                .fillRect(0, 0, 200, 15)
+                .generateTexture('healthBarBgImg', 200, 15);
+        }
+        
+        // 檢查血量條
+        if (!this.textures.exists('healthBarImg')) {
+            this.add.graphics()
+                .fillStyle(0x27ae60)
+                .fillRect(0, 0, 200, 15)
+                .generateTexture('healthBarImg', 200, 15);
+        }
     }
 
     create() {
@@ -1313,7 +1329,7 @@ class GameScene extends Phaser.Scene {
         // 關卡顯示
         this.levelText = this.add.text(187.5, 50, `第 ${this.currentLevel} 關`, {
             fontSize: '22px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#2c3e50',
             fontWeight: 'bold',
             stroke: '#ffffff',
@@ -1323,7 +1339,7 @@ class GameScene extends Phaser.Scene {
         // 血量顯示
         this.healthText = this.add.text(187.5, 75, `血量: ${this.playerHealth}/${this.maxHealth}`, {
             fontSize: '14px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#2c3e50',
             fontWeight: 'bold',
             stroke: '#ffffff',
@@ -1331,12 +1347,11 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5);
 
         // 血量條背景
-        this.healthBarBg = this.add.rectangle(187.5, 90, 200, 15, 0x000000);
+        this.healthBarBg = this.add.image(187.5, 90, 'healthBarBgImg');
         this.healthBarBg.setOrigin(0.5);
-        this.healthBarBg.setStrokeStyle(1, 0x34495e);
 
         // 血量條（從左邊開始，所以X要調整）
-        this.healthBar = this.add.rectangle(87.5, 90, 200, 15, 0x27ae60);
+        this.healthBar = this.add.image(87.5, 90, 'healthBarImg');
         this.healthBar.setOrigin(0, 0.5);
 
         // 攻擊力顯示方框 - 右上角最左邊，貼著頂部
@@ -1348,7 +1363,7 @@ class GameScene extends Phaser.Scene {
         
         this.attackText = this.add.text(220, 12.5, `⚔️ ${this.playerAttack}`, {
             fontSize: '11px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#e74c3c',
             fontWeight: 'bold'
         }).setOrigin(0.5);
@@ -1362,7 +1377,7 @@ class GameScene extends Phaser.Scene {
         
         this.defenseText = this.add.text(285, 12.5, `🛡️ ${this.playerDefense}`, {
             fontSize: '11px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#3498db',
             fontWeight: 'bold'
         }).setOrigin(0.5);
@@ -1378,7 +1393,7 @@ class GameScene extends Phaser.Scene {
         
         this.moneyText = this.add.text(347.5, 12.5, `💰 ${this.playerMoney}`, {
             fontSize: '11px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#f39c12',
             fontWeight: 'bold'
         }).setOrigin(0.5);
@@ -1392,7 +1407,7 @@ class GameScene extends Phaser.Scene {
 
         this.eventText = this.add.text(35, 410, '點擊「下一關」開始你的冒險旅程。', {
             fontSize: '14px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#2c3e50',
             wordWrap: { width: 305 },
             lineSpacing: 3
@@ -1404,7 +1419,7 @@ class GameScene extends Phaser.Scene {
         
         const buttonText = this.add.text(0, 0, '下一關', {
             fontSize: '20px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#ffffff',
             fontWeight: 'bold'
         }).setOrigin(0.5);
@@ -1485,7 +1500,7 @@ class GameScene extends Phaser.Scene {
         
         // 更新關卡
         this.currentLevel++;
-        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        this.levelText.setText(`第 ${this.currentLevel} 關`);
         
         // 應用事件效果
         let healthChange = randomEvent.effect.health || 0;
@@ -1535,7 +1550,7 @@ class GameScene extends Phaser.Scene {
         
         // 更新關卡
         this.currentLevel++;
-        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        this.levelText.setText(`第 ${this.currentLevel} 關`);
         
         // 隱藏原本的下一關按鈕
         this.nextLevelButton.setVisible(false);
@@ -1601,7 +1616,7 @@ class GameScene extends Phaser.Scene {
                 fontSize: '9px',
                 fill: canAfford ? '#ffffff' : '#bdc3c7',
                 align: 'center',
-                fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+                fontFamily: 'Arial, sans-serif'
             });
             nameText.setOrigin(0.5);
             
@@ -1610,7 +1625,7 @@ class GameScene extends Phaser.Scene {
                 fontSize: '9px',
                 fill: canAfford ? '#f1c40f' : '#95a5a6',
                 align: 'center',
-                fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+                fontFamily: 'Arial, sans-serif'
             });
             priceText.setOrigin(0.5);
             
@@ -1625,7 +1640,7 @@ class GameScene extends Phaser.Scene {
                 fontSize: '8px',
                 fill: canAfford ? '#27ae60' : '#95a5a6',
                 align: 'center',
-                fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+                fontFamily: 'Arial, sans-serif'
             });
             effectDisplay.setOrigin(0.5);
             
@@ -1670,7 +1685,7 @@ class GameScene extends Phaser.Scene {
             fontSize: '12px',
             fill: '#ffffff',
             align: 'center',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+            fontFamily: 'Arial, sans-serif'
         });
         nothingText.setOrigin(0.5);
         
@@ -1765,7 +1780,7 @@ class GameScene extends Phaser.Scene {
         
         // 更新關卡
         this.currentLevel++;
-        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        this.levelText.setText(`第 ${this.currentLevel} 關`);
         
         // 隱藏原本的下一關按鈕
         this.nextLevelButton.setVisible(false);
@@ -1853,7 +1868,7 @@ class GameScene extends Phaser.Scene {
             fontSize: '12px',
             fill: canLearnOrUpgrade ? '#ffffff' : '#bdc3c7',
             align: 'center',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+            fontFamily: 'Arial, sans-serif'
         });
         nameText.setOrigin(0.5);
         
@@ -1863,7 +1878,7 @@ class GameScene extends Phaser.Scene {
                 fontSize: '10px',
                 fill: '#f39c12',
                 align: 'center',
-                fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+                fontFamily: 'Arial, sans-serif'
             });
             levelText.setOrigin(0.5);
             this.shopButtons.push(levelText);
@@ -1874,7 +1889,7 @@ class GameScene extends Phaser.Scene {
             fontSize: '11px',
             fill: canLearnOrUpgrade ? '#f1c40f' : '#95a5a6',
             align: 'center',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+            fontFamily: 'Arial, sans-serif'
         });
         priceText.setOrigin(0.5);
         
@@ -1883,7 +1898,7 @@ class GameScene extends Phaser.Scene {
             fontSize: '10px',
             fill: canLearnOrUpgrade ? '#ffffff' : '#95a5a6',
             align: 'center',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+            fontFamily: 'Arial, sans-serif'
         });
         actionText.setOrigin(0.5);
         
@@ -1892,7 +1907,7 @@ class GameScene extends Phaser.Scene {
             fontSize: '9px',
             fill: '#e8e8e8',
             align: 'center',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             wordWrap: { width: 200 }
         });
         descText.setOrigin(0.5);
@@ -1942,7 +1957,7 @@ class GameScene extends Phaser.Scene {
             fontSize: '12px',
             fill: '#ffffff',
             align: 'center',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif'
+            fontFamily: 'Arial, sans-serif'
         });
         leaveText.setOrigin(0.5);
         
@@ -2057,7 +2072,7 @@ class GameScene extends Phaser.Scene {
         
         // 更新關卡
         this.currentLevel++;
-        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        this.levelText.setText(`第 ${this.currentLevel} 關`);
         
         // 隱藏下一關按鈕
         this.nextLevelButton.setVisible(false);
@@ -2112,7 +2127,7 @@ class GameScene extends Phaser.Scene {
         // 怪物名稱
         const monsterNameText = this.add.text(280, 250, this.battleData.monster.name, {
             fontSize: '14px',
-            fontFamily: 'Arial, "Microsoft YaHei", "微軟雅黑", sans-serif',
+            fontFamily: 'Arial, sans-serif',
             fill: '#8b4513',
             fontWeight: 'bold',
             align: 'center'
@@ -2285,7 +2300,7 @@ class GameScene extends Phaser.Scene {
         
         // 更新關卡
         this.currentLevel++;
-        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        this.levelText.setText(`第 ${this.currentLevel} 關`);
         
         // 正確處理裝備：添加到背包而不是直接加屬性
         const equipment = event.equipment;
@@ -2343,12 +2358,14 @@ class GameScene extends Phaser.Scene {
         this.defenseText.setText(`🛡️ ${this.playerDefense}`);
         this.moneyText.setText(`💰 ${this.playerMoney}`);
 
+        // 注意：由於 healthBar 現在是圖片(image)，不能使用 setFillStyle
+        // 圖片的顏色變化需要通過 setTint 或其他方式實現
         if (healthPercentage > 0.6) {
-            this.healthBar.setFillStyle(0x27ae60);
+            this.healthBar.setTint(0x27ae60);
         } else if (healthPercentage > 0.3) {
-            this.healthBar.setFillStyle(0xf39c12);
+            this.healthBar.setTint(0xf39c12);
         } else {
-            this.healthBar.setFillStyle(0xe74c3c);
+            this.healthBar.setTint(0xe74c3c);
         }
     }
 
