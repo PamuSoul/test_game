@@ -14,3 +14,6 @@ const ASSETS = {
         // gameOver: 'assets/music/game_over.mp3'
     }
 };
+
+// 確保 ASSETS 可以在全域範圍內使用
+window.ASSETS = ASSETS;

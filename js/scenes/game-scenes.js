@@ -127,25 +127,30 @@ class UpgradeScene extends Phaser.Scene {
     createDefenseUpgrade() {
         const cost = 40 + (parseInt(localStorage.getItem('defenseUpgrades') || 0) * 25);
         const yPos = 340;
-        
+
+        // 標題
         this.add.text(50, yPos, '🛡️ 防禦力強化', {
             fontSize: '18px',
             fill: '#3498db',
             fontWeight: 'bold'
-        });
+        }).setOrigin(0, 0.5);
 
+        // 描述
         this.add.text(50, yPos + 25, `提升防禦力 +2`, {
             fontSize: '13px',
             fill: '#2c3e50'
-        });
+        }).setOrigin(0, 0.5);
 
+        // 價格
         this.add.text(50, yPos + 45, `費用: ${cost} 金錢`, {
             fontSize: '13px',
             fill: '#f39c12',
             fontWeight: 'bold'
-        });
+        }).setOrigin(0, 0.5);
 
+        // 購買按鈕
         this.createUpgradeButton(280, yPos + 30, cost, () => {
+            // 花費金錢，成功後增加升級數並套用效果
             if (GameDatabase.spendMoney(cost) !== this.currentMoney) {
                 const currentUpgrades = parseInt(localStorage.getItem('defenseUpgrades') || 0);
                 localStorage.setItem('defenseUpgrades', (currentUpgrades + 1).toString());
@@ -243,52 +248,51 @@ class EquipmentScene extends Phaser.Scene {
     }
 
     preload() {
-        console.log('EquipmentScene preload 開始');
-        
         // 載入背景圖片
-        this.load.image('backgroundImg', ASSETS.images.background);
+        try {
+            this.load.image('backgroundImg', ASSETS.images.background);
+        } catch (error) {
+            console.error('EquipmentScene 載入背景圖片錯誤:', error);
+        }
         
         this.load.on('loaderror', (file) => {
             console.error('EquipmentScene 載入失敗:', file.src);
-            // 載入失敗時不做任何操作，在 create 中處理
+            // 立即創建備用背景
+            this.createFallbackBackground();
         });
         
         this.load.on('complete', () => {
-            console.log('EquipmentScene 資源載入完成');
+            if (!this.textures.exists('backgroundImg')) {
+                this.createFallbackBackground();
+            }
         });
-        
-        console.log('EquipmentScene preload 結束');
+    }
+
+    createFallbackBackground() {
+        if (!this.textures.exists('backgroundImg')) {
+            this.add.graphics()
+                .fillGradientStyle(0x2c3e50, 0x2c3e50, 0x34495e, 0x34495e)
+                .fillRect(0, 0, 375, 667)
+                .generateTexture('backgroundImg', 375, 667);
+        }
     }
 
     create() {
-        console.log('EquipmentScene create 開始');
-        
         try {
-            // 確保背景圖片存在，如果不存在就創建一個
+            // 確保背景圖片存在
             if (!this.textures.exists('backgroundImg')) {
-                console.log('創建預設背景圖片');
-                this.add.graphics()
-                    .fillGradientStyle(0x2c3e50, 0x2c3e50, 0x34495e, 0x34495e)
-                    .fillRect(0, 0, 375, 667)
-                    .generateTexture('backgroundImg', 375, 667);
+                this.createFallbackBackground();
             }
             
             // 載入裝備數據
-            console.log('載入裝備數據');
             this.loadEquipmentData();
             
             // 建立UI元素
-            console.log('創建背景');
             this.createBackground();
-            console.log('創建玩家狀態區');
             this.createPlayerSection();
-            console.log('創建裝備欄位');
             this.createEquipmentSlots();
-            console.log('創建背包區域');
             this.createInventorySection();
-            console.log('創建操作按鈕');
             this.createActionButtons();
-            console.log('創建導航按鈕');
             this.createNavigationButtons();
             
             console.log('EquipmentScene create 完成');
@@ -1245,20 +1249,20 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        console.log('GameScene 開始載入資源');
-        this.load.image('backgroundImg', ASSETS.images.background);
-        this.load.image('player', ASSETS.images.player);
+        try {
+            this.load.image('backgroundImg', ASSETS.images.background);
+            this.load.image('player', ASSETS.images.player);
+        } catch (error) {
+            console.error('GameScene 載入圖片錯誤:', error);
+        }
         
         this.load.on('loaderror', (file) => {
-            console.error('載入失敗:', file.src);
-        });
-        
-        this.load.on('filecomplete', (key, type, data) => {
-            console.log('載入成功:', key, type);
+            console.error('GameScene 載入失敗:', file.src);
+            // 立即創建備用資源
+            this.createFallbackGraphics();
         });
         
         this.load.on('complete', () => {
-            console.log('GameScene 資源載入完成');
             this.createFallbackGraphics();
         });
     }

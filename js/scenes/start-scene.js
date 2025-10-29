@@ -5,35 +5,22 @@ class StartScene extends Phaser.Scene {
     }
 
     preload() {
-        // 載入背景圖片
-        console.log('開始載入背景圖片:', ASSETS.images.background);
-        this.load.image('backgroundImg', ASSETS.images.background);
+        // 使用統一的圖片載入工具
+        const imageConfigs = [
+            { key: 'backgroundImg', src: ASSETS.images.background }
+        ];
         
-        // 設置載入錯誤處理
-        this.load.on('loaderror', (file) => {
-            console.error('載入失敗:', file.src);
-        });
-        
-        // 載入成功處理
-        this.load.on('filecomplete', (key, type, data) => {
-            console.log('載入成功:', key, type);
-        });
-        
-        // 載入完成後創建備用背景
-        this.load.on('complete', () => {
-            console.log('載入完成，檢查背景圖片是否存在:', this.textures.exists('backgroundImg'));
-            if (!this.textures.exists('backgroundImg')) {
-                console.log('背景圖片不存在，使用預設背景');
-                // 創建預設漸層背景
-                this.add.graphics()
-                    .fillGradientStyle(0x87CEEB, 0x87CEEB, 0x98FB98, 0x98FB98)
-                    .fillRect(0, 0, 375, 667)
-                    .generateTexture('backgroundImg', 375, 667);
-            }
+        ImageLoader.loadImages(this, imageConfigs).then(() => {
+            console.log('StartScene 圖片載入完成');
+        }).catch((error) => {
+            console.error('StartScene 圖片載入失敗:', error);
         });
     }
 
     create() {
+        // 確保背景圖片存在
+        ImageLoader.ensureImageExists(this, 'backgroundImg');
+        
         // 添加背景圖片
         const bg = this.add.image(187.5, 333.5, 'backgroundImg');
         bg.setOrigin(0.5);
