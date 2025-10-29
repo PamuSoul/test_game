@@ -166,16 +166,19 @@ const GameDatabase = {
     },
     
     synthesizeEquipment(equipment1, equipment2) {
+        // 檢查是否為相同類型和品質的裝備
         if (equipment1.type !== equipment2.type || 
             equipment1.quality !== equipment2.quality || 
             equipment1.name !== equipment2.name) {
-            return null;
+            return { success: false, message: '只能合成相同類型和品質的裝備' };
         }
         
+        // 檢查是否已達最高品質
         if (equipment1.quality >= 3) {
-            return null;
+            return { success: false, message: '裝備已達最高品質，無法合成' };
         }
         
+        // 創建新的高品質裝備
         const newQuality = equipment1.quality + 1;
         const newName = this.getUpgradedEquipmentName(equipment1.name, newQuality);
         
@@ -188,8 +191,9 @@ const GameDatabase = {
             enhancement: 0
         };
         
+        // 根據裝備類型和品質設定基礎屬性
         if (equipment1.type === 'weapon') {
-            const attackValues = [5, 8, 12, 18];
+            const attackValues = [5, 8, 12, 18]; // 白、藍、金、紫
             newEquipment.baseAttack = attackValues[newQuality] || attackValues[3];
         } else {
             const defenseValues = {
@@ -201,7 +205,38 @@ const GameDatabase = {
             newEquipment.baseDefense = values[newQuality] || values[3];
         }
         
-        return newEquipment;
+        // 從背包中移除原始裝備並添加新裝備
+        const inventory = this.loadEquipmentInventory();
+        
+        // 找到並移除兩個原始裝備
+        const index1 = inventory.findIndex(item => item.id === equipment1.id);
+        const index2 = inventory.findIndex(item => item.id === equipment2.id);
+        
+        if (index1 !== -1 && index2 !== -1) {
+            // 移除較大索引的先，避免索引變動
+            if (index1 > index2) {
+                inventory.splice(index1, 1);
+                inventory.splice(index2, 1);
+            } else {
+                inventory.splice(index2, 1);
+                inventory.splice(index1, 1);
+            }
+            
+            // 添加新裝備
+            inventory.push(newEquipment);
+            
+            // 保存更新後的背包
+            this.saveEquipmentInventory(inventory);
+            
+            return { 
+                success: true, 
+                newEquipment: newEquipment,
+                inventory: inventory,
+                message: `成功合成 ${newEquipment.name}！`
+            };
+        }
+        
+        return { success: false, message: '合成失敗：找不到指定的裝備' };
     },
     
     getUpgradedEquipmentName(baseName, quality) {

@@ -24,7 +24,7 @@ const gameEvents = [
     {
         name: "魔法泉水",
         description: "你發現了一口魔法泉水。",
-        effect: { health: 50, message: "完全恢復生命值！" },
+        effect: { fullHeal: true, message: "完全回復生命值！" },
         weight: 8   // 中等機率的好事件
     },
     {
@@ -85,9 +85,9 @@ const gameEvents = [
             {
                 id: "dual_strike",
                 name: "二刀流",
-                description: "10%機率可攻擊第二次（僅本局有效）",
+                description: "15%機率可攻擊第二次（僅本局有效）",
                 price: 100,
-                chance: 0.1
+                chance: 0.15
             }
         ],
         weight: 15  // 中等機率事件
