@@ -78,6 +78,21 @@ const gameEvents = [
         weight: 10  // 中等機率的正面事件
     },
     {
+        name: "技能商店",
+        description: "你遇到了一位神秘的技能大師，他可以傳授你特殊技能。",
+        type: "skill_shop",  // 標記為技能商店類型事件
+        skills: [
+            {
+                id: "dual_strike",
+                name: "二刀流",
+                description: "10%機率可攻擊第二次（僅本局有效）",
+                price: 100,
+                chance: 0.1
+            }
+        ],
+        weight: 15  // 中等機率事件
+    },
+    {
         name: "毒霧",
         description: "你走進了一片毒霧區域。",
         effect: { health: -20, message: "失去 20 點生命值！" },
@@ -386,11 +401,11 @@ const gameEvents = [
         type: "battle",
         monster: {
             name: "盜賊頭目",
-            health: 90,
-            maxHealth: 90,
-            attack: 10,
+            health: 490,
+            maxHealth: 490,
+            attack: 60,
             defense: 2,
-            reward: { money: 25, message: "擊敗盜賊頭目獲得 25 金錢！" },
+            reward: { money: 25, message: "擊敗盜賊頭目獲得 250 金錢！" },
             escapeMessage: "盜賊們四散逃跑！沒有獲得任何獎勵。"
         },
         weight: 8   // 中等機率的敵人事件

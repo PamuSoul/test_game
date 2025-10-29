@@ -272,6 +272,23 @@ const GameDatabase = {
         // 如果找不到升級路線，使用舊邏輯（向下兼容）
         const qualityPrefixes = ['', '精良', '稀有', '史詩'];
         return quality > 0 ? `${qualityPrefixes[quality]} ${cleanName}` : cleanName;
+    },
+
+    // === 技能系統（單場遊戲臨時技能）===
+    // 注意：技能不會保存到 localStorage，只在當局遊戲有效
+    
+    // 學習或升級技能（臨時）
+    learnSkill(skillId, skillData) {
+        // 技能存儲在遊戲場景的臨時變量中，不保存到 localStorage
+        // 這個方法由 GameScene 調用，直接操作場景的 playerSkills 屬性
+        return { learned: true, level: 1 }; // 簡化返回，實際邏輯在場景中處理
+    },
+
+    // 檢查是否擁有技能（臨時）
+    hasSkill(skillId) {
+        // 這個方法需要由 GameScene 提供當前場景的技能數據
+        // 返回 null 表示沒有技能，實際檢查在場景中進行
+        return null;
     }
 };
 
@@ -1888,6 +1905,12 @@ class GameScene extends Phaser.Scene {
         this.maxHealth = baseMaxHealth;
         this.currentLevel = 1;
         
+        // 初始化臨時技能系統（單場遊戲有效）
+        this.playerSkills = {};
+        
+        // 清理舊的永久技能數據（如果存在）
+        localStorage.removeItem('playerSkills');
+        
         // 初始化攻擊力和防禦力（包含裝備加成）
         this.calculatePlayerStats();
     }
@@ -2215,8 +2238,8 @@ class GameScene extends Phaser.Scene {
     // 觸發隨機事件
     triggerRandomEvent() {
         if (this.playerHealth <= 0) {
-            this.eventText.setText('你的血量已經歸零。\n重新整理頁面重新開始遊戲。');
-            this.nextLevelButton.setVisible(false);
+            this.eventText.setText('你的血量已經歸零。\n\n💀 遊戲結束！點擊重新開始回到首頁。');
+            this.changeButtonToRestart();
             this.playSound('gameOver');
             return;
         }
@@ -2227,6 +2250,13 @@ class GameScene extends Phaser.Scene {
         // 檢查是否為商店類型事件
         if (randomEvent.type === "shop") {
             this.showShopEvent(randomEvent);
+            return;
+        }
+        
+        // 檢查是否為技能商店類型事件
+        if (randomEvent.type === "skill_shop") {
+            console.log('觸發技能商店事件:', randomEvent);
+            this.showSkillShopEvent(randomEvent);
             return;
         }
         
@@ -2456,6 +2486,9 @@ class GameScene extends Phaser.Scene {
 
     // 將按鈕改為重新開始
     changeButtonToRestart() {
+        // 確保按鈕可見
+        this.nextLevelButton.setVisible(true);
+        
         // 移除原有的事件監聽器
         this.nextLevelButton.removeAllListeners();
         
@@ -2675,6 +2708,9 @@ class GameScene extends Phaser.Scene {
         GameDatabase.spendMoney(item.price);
         this.playerMoney = GameDatabase.loadMoney();
         
+        // 立即更新金錢顯示
+        this.moneyText.setText(`💰 ${this.playerMoney}`);
+        
         // 播放購買音效
         this.playSound('eventPositive');
         
@@ -2769,6 +2805,326 @@ class GameScene extends Phaser.Scene {
         
         // 恢復下一關按鈕
         this.nextLevelButton.setVisible(true);
+    }
+
+    // 顯示技能商店事件
+    showSkillShopEvent(event) {
+        console.log('進入 showSkillShopEvent，事件資料:', event);
+        
+        // 更新關卡
+        this.currentLevel++;
+        this.levelText.setText(`第 ${this.currentLevel-1} 關`);
+        
+        // 隱藏原本的下一關按鈕
+        this.nextLevelButton.setVisible(false);
+        
+        // 創建技能商店介面
+        this.createSkillShopInterface(event);
+    }
+
+    // 創建技能商店介面
+    createSkillShopInterface(event) {
+        console.log('進入 createSkillShopInterface，事件資料:', event);
+        
+        // 檢查事件是否有技能數據
+        if (!event.skills || event.skills.length === 0) {
+            console.error('技能商店事件缺少技能數據', event);
+            this.eventText.setText('技能大師似乎沒有什麼可以教授的...');
+            this.nextLevelButton.setVisible(true);
+            return;
+        }
+        
+        console.log('技能數據檢查通過，技能:', event.skills);
+        
+        // 顯示神秘導師描述
+        this.eventText.setText(`${event.description}\n\n神秘導師說：「你渴望力量嗎？我可以傳授你特殊的戰鬥技巧。」\n💰 你的金錢: ${this.playerMoney}`);
+        
+        // 清理現有的商店按鈕（如果有的話）
+        if (this.shopButtons) {
+            this.shopButtons.forEach(button => button.destroy());
+        }
+        this.shopButtons = [];
+        
+        // 方框大小和位置設定
+        const boxSize = 80;
+        const boxX = 180; // 中間位置
+        const boxY = 160;
+        
+        // 獲取技能資訊
+        const skill = event.skills[0]; // 目前只有一個技能
+        if (!skill) {
+            console.error('無法獲取技能資料');
+            this.eventText.setText('技能大師似乎沒有什麼可以教授的...');
+            this.nextLevelButton.setVisible(true);
+            return;
+        }
+        
+        // 檢查臨時技能（當場遊戲有效）
+        const ownedSkill = this.playerSkills[skill.id];
+        
+        let canLearnOrUpgrade = false;
+        let buttonText = "";
+        let skillDescription = skill.description;
+        let currentLevel = 0;
+        let price = skill.price;
+        
+        if (ownedSkill) {
+            currentLevel = ownedSkill.level;
+            skillDescription = ownedSkill.description;
+            
+            if (currentLevel < 3) {
+                canLearnOrUpgrade = this.playerMoney >= price;
+                buttonText = `升級 (Lv.${currentLevel})`;
+            } else {
+                buttonText = "已滿級";
+                canLearnOrUpgrade = false;
+            }
+        } else {
+            canLearnOrUpgrade = this.playerMoney >= price;
+            buttonText = "學習";
+        }
+        
+        // 創建技能方框背景
+        const boxBg = this.add.rectangle(boxX, boxY, boxSize, boxSize);
+        boxBg.setFillStyle(canLearnOrUpgrade ? 0x9b59b6 : 0x95a5a6);
+        boxBg.setStrokeStyle(3, canLearnOrUpgrade ? 0x8e44ad : 0x7f8c8d);
+        
+        // 創建技能名稱
+        const nameText = this.add.text(boxX, boxY - 25, skill.name, {
+            fontSize: '12px',
+            fill: canLearnOrUpgrade ? '#ffffff' : '#bdc3c7',
+            align: 'center',
+            fontFamily: 'Arial, sans-serif'
+        });
+        nameText.setOrigin(0.5);
+        
+        // 創建等級顯示
+        if (ownedSkill) {
+            const levelText = this.add.text(boxX, boxY - 10, `等級 ${currentLevel}/3`, {
+                fontSize: '10px',
+                fill: '#f39c12',
+                align: 'center',
+                fontFamily: 'Arial, sans-serif'
+            });
+            levelText.setOrigin(0.5);
+            this.shopButtons.push(levelText);
+        }
+        
+        // 創建價格文字
+        const priceText = this.add.text(boxX, boxY + 5, `${price}💰`, {
+            fontSize: '11px',
+            fill: canLearnOrUpgrade ? '#f1c40f' : '#95a5a6',
+            align: 'center',
+            fontFamily: 'Arial, sans-serif'
+        });
+        priceText.setOrigin(0.5);
+        
+        // 創建按鈕文字
+        const actionText = this.add.text(boxX, boxY + 20, buttonText, {
+            fontSize: '10px',
+            fill: canLearnOrUpgrade ? '#ffffff' : '#95a5a6',
+            align: 'center',
+            fontFamily: 'Arial, sans-serif'
+        });
+        actionText.setOrigin(0.5);
+        
+        // 技能描述（在方框下方）
+        const descText = this.add.text(boxX, boxY + 50, skillDescription, {
+            fontSize: '9px',
+            fill: '#e8e8e8',
+            align: 'center',
+            fontFamily: 'Arial, sans-serif',
+            wordWrap: { width: 200 }
+        });
+        descText.setOrigin(0.5);
+        
+        // 將所有元素加入數組以便管理
+        const buttonElements = [boxBg, nameText, priceText, actionText, descText];
+        this.shopButtons.push(...buttonElements);
+        
+        // 為方框添加互動功能
+        if (canLearnOrUpgrade) {
+            boxBg.setInteractive({ useHandCursor: true });
+            
+            boxBg.on('pointerdown', () => {
+                // 防止重複點擊 - 立即禁用交互
+                boxBg.disableInteractive();
+                actionText.setText('處理中...');
+                actionText.setFill('#666666');
+                
+                this.playSound('buttonClick');
+                this.learnSkillAndLeave(skill);
+            });
+            
+            boxBg.on('pointerover', () => {
+                boxBg.setFillStyle(0x8e44ad);
+                boxBg.setScale(1.1);
+            });
+            
+            boxBg.on('pointerout', () => {
+                boxBg.setFillStyle(0x9b59b6);
+                boxBg.setScale(1);
+            });
+        }
+        
+        // 添加「離開」選項
+        this.createSkillShopLeaveButton();
+    }
+    
+    // 創建技能商店「離開」按鈕
+    createSkillShopLeaveButton() {
+        const buttonX = 180;
+        const buttonY = 240;
+        
+        const leaveBg = this.add.rectangle(buttonX, buttonY, 60, 30);
+        leaveBg.setFillStyle(0xe74c3c);
+        leaveBg.setStrokeStyle(2, 0xc0392b);
+        
+        const leaveText = this.add.text(buttonX, buttonY, '離開', {
+            fontSize: '12px',
+            fill: '#ffffff',
+            align: 'center',
+            fontFamily: 'Arial, sans-serif'
+        });
+        leaveText.setOrigin(0.5);
+        
+        this.shopButtons.push(leaveBg, leaveText);
+        
+        leaveBg.setInteractive({ useHandCursor: true });
+        
+        leaveBg.on('pointerdown', () => {
+            // 防止重複點擊
+            leaveBg.disableInteractive();
+            leaveText.setText('離開中...');
+            leaveText.setFill('#999999');
+            
+            this.playSound('buttonClick');
+            this.leaveSkillShop();
+        });
+        
+        leaveBg.on('pointerover', () => {
+            leaveBg.setFillStyle(0xc0392b);
+            leaveBg.setScale(1.05);
+        });
+        
+        leaveBg.on('pointerout', () => {
+            leaveBg.setFillStyle(0xe74c3c);
+            leaveBg.setScale(1);
+        });
+    }
+    
+    // 學習技能並離開商店
+    learnSkillAndLeave(skill) {
+        // 防止重複購買 - 檢查是否已經在處理中
+        if (this.isProcessingSkillPurchase) {
+            return;
+        }
+        this.isProcessingSkillPurchase = true;
+        
+        // 檢查是否有足夠金錢
+        if (this.playerMoney < skill.price) {
+            this.eventText.setText(this.eventText.text + '\n\n💸 金錢不足！');
+            this.isProcessingSkillPurchase = false;
+            return;
+        }
+        
+        // 扣除金錢
+        GameDatabase.spendMoney(skill.price);
+        this.playerMoney = GameDatabase.loadMoney();
+        
+        // 立即更新金錢顯示
+        this.moneyText.setText(`💰 ${this.playerMoney}`);
+        
+        // 播放學習音效
+        this.playSound('levelUp');
+        
+        // 學習或升級技能（臨時技能，僅當局有效）
+        let result;
+        if (this.playerSkills[skill.id]) {
+            // 技能已存在，升級
+            const currentLevel = this.playerSkills[skill.id].level;
+            if (currentLevel < 3) {
+                this.playerSkills[skill.id].level = currentLevel + 1;
+                
+                // 更新技能效果
+                if (skill.id === 'dual_strike') {
+                    const chances = [0.1, 0.3, 0.5];
+                    const descriptions = [
+                        "10%機率可攻擊第二次",
+                        "30%機率可攻擊第二次", 
+                        "50%機率可攻擊第二次"
+                    ];
+                    this.playerSkills[skill.id].chance = chances[currentLevel];
+                    this.playerSkills[skill.id].description = descriptions[currentLevel];
+                }
+                
+                result = { upgraded: true, level: this.playerSkills[skill.id].level };
+            } else {
+                result = { maxLevel: true };
+            }
+        } else {
+            // 新技能
+            this.playerSkills[skill.id] = {
+                id: skill.id,
+                name: skill.name,
+                description: skill.description,
+                level: 1,
+                chance: skill.chance
+            };
+            result = { learned: true, level: 1 };
+        }
+        
+        let message = "";
+        let tempMessage = "\n⚠️ 此技能僅在本局遊戲有效";
+        
+        if (result.learned) {
+            message = `🌟 學會了新技能：${skill.name}！\n${skill.description}${tempMessage}\n\n💰 剩餘金錢: ${this.playerMoney}`;
+        } else if (result.upgraded) {
+            const upgradeSkill = this.playerSkills[skill.id];
+            message = `⬆️ 技能升級成功！\n${skill.name} 現在是等級 ${result.level}！\n${upgradeSkill.description}${tempMessage}\n\n💰 剩餘金錢: ${this.playerMoney}`;
+        }
+        
+        // 更新顯示文字
+        this.eventText.setText(`${message}\n\n神秘導師滿意地點點頭：「很好，好好運用這份力量\n吧！」`);
+        
+        // 清理商店按鈕
+        if (this.shopButtons) {
+            this.shopButtons.forEach(button => button.destroy());
+            this.shopButtons = [];
+        }
+        
+        // 重置處理狀態
+        this.isProcessingSkillPurchase = false;
+        
+        // 恢復下一關按鈕
+        this.nextLevelButton.setVisible(true);
+    }
+    
+    // 離開技能商店
+    leaveSkillShop() {
+        // 防止重複執行
+        if (this.isLeavingSkillShop) {
+            return;
+        }
+        this.isLeavingSkillShop = true;
+        
+        // 播放按鈕音效
+        this.playSound('buttonClick');
+        
+        // 清理商店按鈕
+        if (this.shopButtons) {
+            this.shopButtons.forEach(button => button.destroy());
+            this.shopButtons = [];
+        }
+        
+        // 顯示離開訊息
+        this.eventText.setText('你決定暫時不學習技能，與神秘導師告別。\n\n導師說：「技能永遠在這裡等著你，當你準備好時再來吧。」');
+        
+        // 恢復下一關按鈕
+        this.nextLevelButton.setVisible(true);
+        
+        // 重置狀態
+        this.isLeavingSkillShop = false;
     }
 
     // 開始戰鬥
@@ -2908,6 +3264,24 @@ class GameScene extends Phaser.Scene {
         this.updateBattleDisplay();
         this.addBattleLog(`你攻擊 ${this.battleData.monster.name}，造成 ${damage} 點傷害！`);
         
+        // 檢查二刀流技能（臨時技能）
+        const dualStrike = this.playerSkills['dual_strike'];
+        if (dualStrike && this.battleData.monster.health > 0) {
+            // 根據技能等級判斷是否觸發
+            const random = Math.random();
+            if (random < dualStrike.chance) {
+                // 觸發二刀流！
+                const secondDamage = Math.max(1, this.playerAttack - this.battleData.monster.defense);
+                this.battleData.monster.health = Math.max(0, this.battleData.monster.health - secondDamage);
+                
+                this.updateBattleDisplay();
+                this.addBattleLog(`⚔️⚔️ 二刀流發動！再次攻擊造成 ${secondDamage} 點傷害！`);
+                
+                // 播放特殊音效
+                this.playSound('levelUp');
+            }
+        }
+        
         // 播放攻擊音效
         this.playSound('eventNegative');
     }
@@ -2977,6 +3351,7 @@ class GameScene extends Phaser.Scene {
             this.eventText.setText(
                 `你在與 ${this.battleData.monster.name} 的戰鬥中陣亡！\n\n💀 遊戲結束！點擊重新開始回到首頁。`
             );
+            
             this.changeButtonToRestart();
         } else if (playerWin) {
             // 玩家勝利
