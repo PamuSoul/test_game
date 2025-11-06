@@ -1878,13 +1878,17 @@ class GameScene extends Phaser.Scene {
         boxBg.setFillStyle(canLearnOrUpgrade ? 0x9b59b6 : 0x95a5a6);
         boxBg.setStrokeStyle(3, canLearnOrUpgrade ? 0x8e44ad : 0x7f8c8d);
         
-        // 創建技能名稱
+        // 創建技能名稱（加大字體、提高對比並設定解析度以避免模糊）
         const nameText = this.add.text(boxX, boxY - 25, skill.name, {
-            fontSize: '12px',
-            fill: canLearnOrUpgrade ? '#ffffff' : '#bdc3c7',
+            fontSize: '16px',
+            fontFamily: 'Arial, sans-serif',
+            fontWeight: 'bold',
+            fill: canLearnOrUpgrade ? '#ffffff' : '#f0f0f0',
             align: 'center',
-            fontFamily: 'Arial, sans-serif'
+            stroke: '#6c3483',
+            strokeThickness: 2
         });
+        if (typeof nameText.setResolution === 'function') nameText.setResolution(window.devicePixelRatio || 1);
         nameText.setOrigin(0.5);
         
         // 創建等級顯示
@@ -1901,30 +1905,41 @@ class GameScene extends Phaser.Scene {
         
         // 創建價格文字
         const priceText = this.add.text(boxX, boxY + 5, `${price}💰`, {
-            fontSize: '11px',
-            fill: canLearnOrUpgrade ? '#f1c40f' : '#95a5a6',
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            fill: canLearnOrUpgrade ? '#f1c40f' : '#bdc3c7',
             align: 'center',
-            fontFamily: 'Arial, sans-serif'
+            fontWeight: 'bold',
+            stroke: '#7f6b00',
+            strokeThickness: 1
         });
+        if (typeof priceText.setResolution === 'function') priceText.setResolution(window.devicePixelRatio || 1);
         priceText.setOrigin(0.5);
         
         // 創建按鈕文字
         const actionText = this.add.text(boxX, boxY + 20, buttonText, {
-            fontSize: '10px',
-            fill: canLearnOrUpgrade ? '#ffffff' : '#95a5a6',
+            fontSize: '12px',
+            fontFamily: 'Arial, sans-serif',
+            fill: canLearnOrUpgrade ? '#ffffff' : '#bdc3c7',
             align: 'center',
-            fontFamily: 'Arial, sans-serif'
+            fontWeight: 'bold'
         });
+        if (typeof actionText.setResolution === 'function') actionText.setResolution(window.devicePixelRatio || 1);
         actionText.setOrigin(0.5);
         
         // 技能描述（在方框下方）
         const descText = this.add.text(boxX, boxY + 50, skillDescription, {
-            fontSize: '9px',
-            fill: '#e8e8e8',
-            align: 'center',
+            fontSize: '11px',
             fontFamily: 'Arial, sans-serif',
-            wordWrap: { width: 200 }
+            fill: '#000000ff',
+            align: 'center',
+            wordWrap: { width: 220 },
+            fontWeight: 'bold',
+            stroke: '#ffffff',
+            strokeThickness: 3,
+            lineSpacing: 2
         });
+        if (typeof descText.setResolution === 'function') descText.setResolution(window.devicePixelRatio || 1);
         descText.setOrigin(0.5);
         
         // 將所有元素加入數組以便管理
