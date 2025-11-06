@@ -3,6 +3,10 @@ const ASSETS = {
     images: {
         background: 'assets/images/background.jpg',
         player: 'assets/images/player.png'
+        ,
+        // 怪物素材
+        wolf: 'assets/images/wolf.png',
+        wolf_king: 'assets/images/wolf_king.png'
     },
     audio: {
         // 音檔暫時註解，等需要時再添加

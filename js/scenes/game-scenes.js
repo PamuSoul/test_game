@@ -1252,6 +1252,17 @@ class GameScene extends Phaser.Scene {
         try {
             this.load.image('backgroundImg', ASSETS.images.background);
             this.load.image('player', ASSETS.images.player);
+            // 載入常見的怪物圖片（若新增怪物請在 assets.js 加入對應路徑並在此加入載入）
+            try {
+                this.load.image('wolf', ASSETS.images.wolf);
+            } catch (e) {
+                // 若資源未在 ASSETS 中宣告，忽略即可
+            }
+            try {
+                this.load.image('wolf_king', ASSETS.images.wolf_king);
+            } catch (e) {
+                // 忽略
+            }
         } catch (error) {
             console.error('GameScene 載入圖片錯誤:', error);
         }
@@ -1813,7 +1824,7 @@ class GameScene extends Phaser.Scene {
         console.log('技能數據檢查通過，技能:', event.skills);
         
         // 顯示神秘導師描述
-        this.eventText.setText(`${event.description}\n\n神秘導師說：「你渴望力量嗎？我可以傳授你特殊的戰鬥技巧。」\n💰 你的金錢: ${this.playerMoney}`);
+        this.eventText.setText(`${event.description}\n\n神秘導師說：「你渴望力量嗎？我可以傳授你特殊的\n戰鬥技巧。」\n\n💰 你的金錢: ${this.playerMoney}`);
         
         // 清理現有的商店按鈕（如果有的話）
         if (this.shopButtons) {
@@ -2114,6 +2125,19 @@ class GameScene extends Phaser.Scene {
         const initialStatus = `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n\n` +
                             `📝 戰鬥記錄:\n戰鬥開始！遭遇 ${this.battleData.monster.name}！`;
         
+        // 確保戰鬥文字使用與一般事件相同的樣式，並依裝置像素比調整解析度以避免模糊
+        if (this.eventText) {
+            this.eventText.setStyle({
+                fontSize: '14px',
+                fontFamily: 'Arial, sans-serif',
+                fill: '#2c3e50',
+                wordWrap: { width: 305 },
+                lineSpacing: 3
+            });
+            if (typeof this.eventText.setResolution === 'function') {
+                this.eventText.setResolution(window.devicePixelRatio || 1);
+            }
+        }
         this.eventText.setText(initialStatus);
         this.battleMessages.push(`戰鬥開始！遭遇 ${this.battleData.monster.name}！`);
         
@@ -2123,20 +2147,51 @@ class GameScene extends Phaser.Scene {
         }
         this.battleElements = [];
         
-        // 創建怪物圖片（右側，與玩家水平對齊）
-        const monsterBg = this.add.rectangle(280, 300, 80, 80, 0x8b4513);
-        monsterBg.setStrokeStyle(3, 0x654321);
-        this.battleElements.push(monsterBg);
+        // 嘗試使用怪物圖片（優先），若不存在再使用矩形備援
+        const monsterName = this.battleData.monster.name || '';
+        // 簡單對應怪物名稱到資源 key（可擴充）
+        const nameToKey = {
+            '野狼': 'wolf',
+            '狼王': 'wolf_king',
+            '狼王': 'wolf_king'
+        };
+        let assetKey = nameToKey[monsterName];
+        // 若沒有精確對應，嘗試用部分字串判斷
+        if (!assetKey) {
+            if (monsterName.indexOf('狼王') !== -1 || monsterName.indexOf('狼 王') !== -1) assetKey = 'wolf_king';
+            else if (monsterName.indexOf('狼') !== -1) assetKey = 'wolf';
+        }
+
+        if (assetKey && this.textures.exists(assetKey)) {
+            // 使用圖片顯示怪物，並縮放到合理大小
+            const monsterImg = this.add.image(280, 300, assetKey).setOrigin(0.5);
+            // 嘗試依據圖大小做縮放（限定最大寬/高）
+            const tex = this.textures.get(assetKey);
+            if (tex && tex.source && tex.source[0]) {
+                const w = tex.source[0].width || 64;
+                const h = tex.source[0].height || 64;
+                const maxSize = 80;
+                const scale = Math.min(maxSize / w, maxSize / h, 1);
+                monsterImg.setScale(scale);
+            }
+            this.battleElements.push(monsterImg);
+        } else {
+            // 備援：使用矩形框代表怪物
+            const monsterBg = this.add.rectangle(280, 300, 80, 80, 0x8b4513);
+            monsterBg.setStrokeStyle(3, 0x654321);
+            this.battleElements.push(monsterBg);
+        }
         
+        // 正式環境不使用,沒圖片時可預先顯示——————————————————————————————————————————————————
         // 怪物名稱
-        const monsterNameText = this.add.text(280, 250, this.battleData.monster.name, {
-            fontSize: '14px',
-            fontFamily: 'Arial, sans-serif',
-            fill: '#8b4513',
-            fontWeight: 'bold',
-            align: 'center'
-        }).setOrigin(0.5);
-        this.battleElements.push(monsterNameText);
+        // const monsterNameText = this.add.text(280, 250, this.battleData.monster.name, {
+        //     fontSize: '14px',
+        //     fontFamily: 'Arial, sans-serif',
+        //     fill: '#8b4513',
+        //     fontWeight: 'bold',
+        //     align: 'center'
+        // }).setOrigin(0.5);
+        // this.battleElements.push(monsterNameText);
         
         // 怪物血量背景
         const monsterHealthBg = this.add.rectangle(280, 360, 100, 15, 0x2c3e50);
@@ -2252,6 +2307,20 @@ class GameScene extends Phaser.Scene {
         const battleStatus = `🐺 ${this.battleData.monster.name}: ${this.battleData.monster.health}/${this.battleData.monster.maxHealth} HP\n\n` +
                            `📝 戰鬥記錄:\n${recentMessages.join('\n')}`;
         
+        // 每次更新戰鬥文字時也強制使用一般事件相同的文字樣式/解析度，避免顯示模糊
+        if (this.eventText) {
+            this.eventText.setStyle({
+                fontSize: '14px',
+                fontFamily: 'Arial, sans-serif',
+                fill: '#2c3e50',
+                wordWrap: { width: 305 },
+                lineSpacing: 3
+            });
+            if (typeof this.eventText.setResolution === 'function') {
+                this.eventText.setResolution(window.devicePixelRatio || 1);
+            }
+        }
+
         this.eventText.setText(battleStatus);
     }
 

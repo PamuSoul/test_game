@@ -44,7 +44,7 @@ class StartScene extends Phaser.Scene {
             fill: '#2c3e50',
             fontWeight: 'bold',
             stroke: '#ffffff',
-            strokeThickness: 3
+            strokeThickness: 5
         }).setOrigin(0.5);
 
         // 金錢顯示 - 首頁右上角
@@ -68,8 +68,9 @@ class StartScene extends Phaser.Scene {
             fontSize: '16px',
             fill: '#2c3e50',
             fontWeight: 'bold',
+            fontFamily: 'Arial, sans-serif',
             stroke: '#ffffff',
-            strokeThickness: 1
+            strokeThickness: 3
         }).setOrigin(0.5);
 
         // 創建開始遊戲按鈕
@@ -177,12 +178,5 @@ class StartScene extends Phaser.Scene {
                 this.scene.start('EquipmentScene');
             });
         });
-
-        // 版權信息
-        this.add.text(187.5, 580, 'Made with Phaser 3', {
-            fontSize: '12px',
-            fill: '#7f8c8d',
-            fontStyle: 'italic'
-        }).setOrigin(0.5);
     }
 }

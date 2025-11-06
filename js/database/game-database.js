@@ -265,8 +265,7 @@ const GameDatabase = {
             return upgradePath[quality];
         }
         
-        const qualityPrefixes = ['', '精良', '稀有', '史詩'];
-        return quality > 0 ? `${qualityPrefixes[quality]} ${cleanName}` : cleanName;
+        return cleanName;
     },
 
     // === 技能系統（單場遊戲臨時技能）===
