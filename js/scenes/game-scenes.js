@@ -190,6 +190,15 @@ class UpgradeScene extends Phaser.Scene {
             });
 
             buyButton.on('pointerdown', () => {
+                // 播放按鈕音效（安全呼叫）
+                try {
+                    if (this.sound && this.sound.play) {
+                        this.sound.play('buttonClick', { volume: 0.6 });
+                    }
+                } catch (err) {
+                    console.warn('buttonClick sound play failed:', err);
+                }
+
                 buyButton.setScale(0.95);
                 this.time.delayedCall(100, () => {
                     buyButton.setScale(1);
@@ -226,6 +235,14 @@ class UpgradeScene extends Phaser.Scene {
         });
 
         backButton.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             backButton.setScale(0.95);
             this.time.delayedCall(100, () => {
                 backButton.setScale(1);
@@ -315,6 +332,14 @@ class EquipmentScene extends Phaser.Scene {
 
             backButton.setInteractive({ useHandCursor: true });
             backButton.on('pointerdown', () => {
+                try {
+                    if (this.sound && this.sound.play) {
+                        this.sound.play('buttonClick', { volume: 0.6 });
+                    }
+                } catch (err) {
+                    console.warn('buttonClick sound play failed:', err);
+                }
+
                 this.scene.start('StartScene');
             });
         }
@@ -453,6 +478,14 @@ class EquipmentScene extends Phaser.Scene {
         slotContent.on('pointerdown', () => {
             const currentEquipment = this.playerEquipment[config.type];
             if (currentEquipment) {
+                try {
+                    if (this.sound && this.sound.play) {
+                        this.sound.play('buttonClick', { volume: 0.6 });
+                    }
+                } catch (err) {
+                    console.warn('buttonClick sound play failed:', err);
+                }
+
                 this.unequipItem(config.type);
             }
         });
@@ -557,6 +590,14 @@ class EquipmentScene extends Phaser.Scene {
 
         // 點擊事件
         itemContainer.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             this.selectInventoryItem(index);
         });
 
@@ -665,6 +706,14 @@ class EquipmentScene extends Phaser.Scene {
         });
 
         button.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             button.setScale(0.95);
             this.time.delayedCall(100, () => {
                 button.setScale(1.05);
@@ -952,6 +1001,14 @@ class EquipmentScene extends Phaser.Scene {
 
         // 設置互動事件
         interactiveArea.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             // 銷毀當前界面
             elementsToDestroy.forEach(element => {
                 if (element && element.destroy) {
@@ -1263,6 +1320,17 @@ class GameScene extends Phaser.Scene {
             } catch (e) {
                 // 忽略
             }
+            // 載入音效（若在 ASSETS 中宣告）
+            try {
+                if (ASSETS.audio && ASSETS.audio.backgroundMusic) this.load.audio('backgroundMusic', ASSETS.audio.backgroundMusic);
+                if (ASSETS.audio && ASSETS.audio.buttonClick) this.load.audio('buttonClick', ASSETS.audio.buttonClick);
+                if (ASSETS.audio && ASSETS.audio.eventPositive) this.load.audio('eventPositive', ASSETS.audio.eventPositive);
+                if (ASSETS.audio && ASSETS.audio.eventNegative) this.load.audio('eventNegative', ASSETS.audio.eventNegative);
+                if (ASSETS.audio && ASSETS.audio.levelUp) this.load.audio('levelUp', ASSETS.audio.levelUp);
+                if (ASSETS.audio && ASSETS.audio.gameOver) this.load.audio('gameOver', ASSETS.audio.gameOver);
+            } catch (e) {
+                console.warn('載入音效時發生錯誤，請確認 ASSETS.audio 設定:', e);
+            }
         } catch (error) {
             console.error('GameScene 載入圖片錯誤:', error);
         }
@@ -1350,6 +1418,22 @@ class GameScene extends Phaser.Scene {
             stroke: '#ffffff',
             strokeThickness: 2
         }).setOrigin(0.5);
+
+        // 播放背景音樂（若有載入且還沒播放）
+        try {
+            if (this.sound && !this.bgm) {
+                if (this.cache.audio && this.cache.audio.exists && this.cache.audio.exists('backgroundMusic')) {
+                    this.bgm = this.sound.add('backgroundMusic', { loop: true, volume: 0.35 });
+                    this.bgm.play();
+                } else if (this.cache.audio && this.cache.audio.list && this.cache.audio.list['backgroundMusic']) {
+                    // 兼容不同 Phaser 版本的檢查方式
+                    this.bgm = this.sound.add('backgroundMusic', { loop: true, volume: 0.35 });
+                    this.bgm.play();
+                }
+            }
+        } catch (e) {
+            console.warn('播放背景音樂失敗:', e);
+        }
 
         // 血量顯示
         this.healthText = this.add.text(187.5, 75, `血量: ${this.playerHealth}/${this.maxHealth}`, {
@@ -1448,6 +1532,16 @@ class GameScene extends Phaser.Scene {
             this.time.delayedCall(100, () => {
                 this.nextLevelButton.setScale(1);
             });
+            // 播放按鈕音效（若可用），以免未載入時拋錯用 try/catch 保護
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                // 無音效或播放失敗，忽略
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             this.triggerRandomEvent();
         });
 
@@ -1668,6 +1762,14 @@ class GameScene extends Phaser.Scene {
                 boxBg.setInteractive({ useHandCursor: true });
                 
                 boxBg.on('pointerdown', () => {
+                    try {
+                        if (this.sound && this.sound.play) {
+                            this.sound.play('buttonClick', { volume: 0.6 });
+                        }
+                    } catch (err) {
+                        console.warn('buttonClick sound play failed:', err);
+                    }
+
                     this.buyItemAndLeave(item);
                 });
                 
@@ -1709,6 +1811,14 @@ class GameScene extends Phaser.Scene {
         nothingBg.setInteractive({ useHandCursor: true });
         
         nothingBg.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             this.leaveShop();
         });
         
@@ -1955,7 +2065,14 @@ class GameScene extends Phaser.Scene {
                 boxBg.disableInteractive();
                 actionText.setText('處理中...');
                 actionText.setFill('#666666');
-                
+                try {
+                    if (this.sound && this.sound.play) {
+                        this.sound.play('buttonClick', { volume: 0.6 });
+                    }
+                } catch (err) {
+                    console.warn('buttonClick sound play failed:', err);
+                }
+
                 this.learnSkillAndLeave(skill);
             });
             
@@ -2000,6 +2117,13 @@ class GameScene extends Phaser.Scene {
             leaveBg.disableInteractive();
             leaveText.setText('離開中...');
             leaveText.setFill('#999999');
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
             
             this.leaveSkillShop();
         });
@@ -2470,6 +2594,14 @@ class GameScene extends Phaser.Scene {
         this.nextLevelButton.setInteractive({ useHandCursor: true });
         
         this.nextLevelButton.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             this.nextLevelButton.setScale(0.95);
             this.time.delayedCall(100, () => {
                 this.nextLevelButton.setScale(1);

@@ -10,11 +10,27 @@ class StartScene extends Phaser.Scene {
             { key: 'backgroundImg', src: ASSETS.images.background }
         ];
         
+        // 預載圖片
         ImageLoader.loadImages(this, imageConfigs).then(() => {
             console.log('StartScene 圖片載入完成');
         }).catch((error) => {
             console.error('StartScene 圖片載入失敗:', error);
         });
+
+        // 預載音訊資源（確保首頁按鈕音效/背景音樂可在 start 場景使用）
+        try {
+            if (window.ASSETS && window.ASSETS.audio) {
+                Object.keys(window.ASSETS.audio).forEach(key => {
+                    try {
+                        this.load.audio(key, window.ASSETS.audio[key]);
+                    } catch (e) {
+                        console.warn('載入音訊失敗 key=', key, e);
+                    }
+                });
+            }
+        } catch (err) {
+            console.warn('預載音訊時發生錯誤:', err);
+        }
     }
 
     create() {
@@ -101,6 +117,14 @@ class StartScene extends Phaser.Scene {
         });
 
         startButton.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             startButton.setScale(0.95);
             this.time.delayedCall(100, () => {
                 startButton.setScale(1.05);
@@ -108,6 +132,23 @@ class StartScene extends Phaser.Scene {
                 this.scene.start('GameScene');
             });
         });
+
+        // 嘗試在 start 場景播放背景音樂（若瀏覽器允許自動播放則會播放）
+        try {
+            if (this.sound && this.sound.add && window.ASSETS && window.ASSETS.audio) {
+                if (!this.sound.get('backgroundMusic') && window.ASSETS.audio.backgroundMusic) {
+                    const bg = this.sound.add('backgroundMusic', { loop: true, volume: 0.35 });
+                    // play 可能會被瀏覽器阻擋（自動播放策略），因此包在 try/catch
+                    try {
+                        bg.play();
+                    } catch (err) {
+                        console.warn('backgroundMusic play blocked or failed:', err);
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('背景音樂處理時發生錯誤:', err);
+        }
 
         // 強化按鈕 (左邊) - 調整位置避免重疊
         const upgradeButtonBg = this.add.rectangle(0, 0, 130, 50, 0xe74c3c, 1);
@@ -136,6 +177,14 @@ class StartScene extends Phaser.Scene {
         });
 
         upgradeButton.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             upgradeButton.setScale(0.95);
             this.time.delayedCall(100, () => {
                 upgradeButton.setScale(1.05);
@@ -171,6 +220,14 @@ class StartScene extends Phaser.Scene {
         });
 
         equipButton.on('pointerdown', () => {
+            try {
+                if (this.sound && this.sound.play) {
+                    this.sound.play('buttonClick', { volume: 0.6 });
+                }
+            } catch (err) {
+                console.warn('buttonClick sound play failed:', err);
+            }
+
             equipButton.setScale(0.95);
             this.time.delayedCall(100, () => {
                 equipButton.setScale(1.05);
