@@ -6,7 +6,10 @@ const ASSETS = {
         ,
         // 怪物素材
         wolf: 'assets/images/wolf.png',
-        wolf_king: 'assets/images/wolf_king.png'
+        wolf_king: 'assets/images/wolf_king.png',
+        bandit:'assets/images/bandit.png',
+        goblin:'assets/images/goblin.png',
+        guardian:'assets/images/guardian.png'
     },
     audio: {
         // 常用音效

@@ -59,6 +59,22 @@ class GameScene extends Phaser.Scene {
             } catch (e) {
                 // 忽略
             }
+            // 載入其他怪物圖片（bandit / goblin / guardian）
+            try {
+                this.load.image('bandit', ASSETS.images.bandit);
+            } catch (e) {
+                // 若資源未在 ASSETS 中宣告，忽略即可
+            }
+            try {
+                this.load.image('goblin', ASSETS.images.goblin);
+            } catch (e) {
+                // 忽略
+            }
+            try {
+                this.load.image('guardian', ASSETS.images.guardian);
+            } catch (e) {
+                // 忽略
+            }
             // 載入音效（若在 ASSETS 中宣告）
             try {
                 if (ASSETS.audio && ASSETS.audio.backgroundMusic) this.load.audio('backgroundMusic', ASSETS.audio.backgroundMusic);
@@ -1031,13 +1047,19 @@ class GameScene extends Phaser.Scene {
         const nameToKey = {
             '野狼': 'wolf',
             '狼王': 'wolf_king',
-            '狼王': 'wolf_king'
+            '狼王': 'wolf_king',
+            '哥布林戰士': 'goblin',
+            '盜賊頭目': 'bandit',
+            '石碑守護者': 'guardian'
         };
         let assetKey = nameToKey[monsterName];
         // 若沒有精確對應，嘗試用部分字串判斷
         if (!assetKey) {
             if (monsterName.indexOf('狼王') !== -1 || monsterName.indexOf('狼 王') !== -1) assetKey = 'wolf_king';
             else if (monsterName.indexOf('狼') !== -1) assetKey = 'wolf';
+            else if (monsterName.indexOf('哥布林') !== -1) assetKey = 'goblin';
+            else if (monsterName.indexOf('盜賊') !== -1) assetKey = 'bandit';
+            else if (monsterName.indexOf('守護') !== -1 || monsterName.indexOf('石碑') !== -1) assetKey = 'guardian';
         }
 
         if (assetKey && this.textures.exists(assetKey)) {
