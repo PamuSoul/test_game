@@ -40,6 +40,9 @@ class StartScene extends Phaser.Scene {
         // 背景（使用共用函式）
         SceneUtils.ensureBackground(this, 'backgroundImg', 187.5, 333.5, 375, 667);
 
+        // 初始化音訊（解鎖與建立 sound 實例）
+        try { SceneUtils.initAudio(this); } catch (e) { /* ignore */ }
+
         // 遊戲標題
         this.add.text(187.5, 200, '事件冒險遊戲', {
             fontSize: '32px',

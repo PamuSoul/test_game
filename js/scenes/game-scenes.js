@@ -111,6 +111,8 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
+        // 初始化音訊（解鎖與建立 sound 實例）
+        try { SceneUtils.initAudio(this); } catch (e) { /* ignore */ }
         // 背景
         const bg = this.add.image(187.5, 333.5, 'backgroundImg');
         bg.setOrigin(0.5);
@@ -161,7 +163,14 @@ class GameScene extends Phaser.Scene {
         // 播放背景音樂（若有載入且還沒播放）
         try {
             if (this.sound && !this.bgm) {
-                if (this.cache.audio && this.cache.audio.exists && this.cache.audio.exists('backgroundMusic')) {
+                // 如果已有同 key 的 sound instance（例如在 StartScene 已建立），就重用它，避免重複播放
+                const existing = this.sound.get('backgroundMusic');
+                if (existing) {
+                    this.bgm = existing;
+                    try {
+                        if (!this.bgm.isPlaying) this.bgm.play();
+                    } catch (e) { /* ignore play errors */ }
+                } else if (this.cache.audio && this.cache.audio.exists && this.cache.audio.exists('backgroundMusic')) {
                     this.bgm = this.sound.add('backgroundMusic', { loop: true, volume: 0.35 });
                     this.bgm.play();
                 } else if (this.cache.audio && this.cache.audio.list && this.cache.audio.list['backgroundMusic']) {
@@ -229,7 +238,7 @@ class GameScene extends Phaser.Scene {
         this.moneyBg.lineStyle(2, 0xf39c12); // 金色邊框
         this.moneyBg.strokeRoundedRect(320, 0, 55, 25, 5);
         
-        this.moneyText = this.add.text(347.5, 12.5, `💰 ${this.playerMoney}`, {
+        this.moneyText = this.add.text(347.5, 12.5, `💰 ${SceneUtils.formatMoney(this.playerMoney)}`, {
             fontSize: '11px',
             fontFamily: 'Arial, sans-serif',
             fill: '#f39c12',
@@ -271,15 +280,8 @@ class GameScene extends Phaser.Scene {
             this.time.delayedCall(100, () => {
                 this.nextLevelButton.setScale(1);
             });
-            // 播放按鈕音效（若可用），以免未載入時拋錯用 try/catch 保護
-            try {
-                if (this.sound && this.sound.play) {
-                    this.sound.play('buttonClick', { volume: 0.6 });
-                }
-            } catch (err) {
-                // 無音效或播放失敗，忽略
-                console.warn('buttonClick sound play failed:', err);
-            }
+            // 播放按鈕音效（使用 SceneUtils 以便集中管理與解鎖）
+            try { SceneUtils.playSound(this, 'buttonClick', { volume: 0.6 }); } catch (err) { /* ignore */ }
 
             this.triggerRandomEvent();
         });
@@ -379,12 +381,23 @@ class GameScene extends Phaser.Scene {
         }
 
         this.updateDisplay();
-        
+
+        // 播放對應音效：正面/負面/死亡
+        try {
+            if (instantDeath || this.playerHealth <= 0) {
+                SceneUtils.playSound(this, 'gameOver');
+            } else if (fullHeal || healthChange > 0 || moneyGain > 0) {
+                SceneUtils.playSound(this, 'eventPositive');
+            } else if (healthChange < 0) {
+                SceneUtils.playSound(this, 'eventNegative');
+            }
+        } catch (e) { /* ignore sound errors */ }
+
         // 顯示事件結果
         this.eventText.setText(
             `${randomEvent.description}\n\n` +
             `${randomEvent.effect.message}\n\n` +
-            `💰 總金錢: ${this.playerMoney}`
+            `💰 總金錢: ${SceneUtils.formatMoney(this.playerMoney)}`
         );
 
         if (this.playerHealth <= 0) {
@@ -508,14 +521,7 @@ class GameScene extends Phaser.Scene {
                 boxBg.setInteractive({ useHandCursor: true });
                 
                 boxBg.on('pointerdown', () => {
-                    try {
-                        if (this.sound && this.sound.play) {
-                            this.sound.play('buttonClick', { volume: 0.6 });
-                        }
-                    } catch (err) {
-                        console.warn('buttonClick sound play failed:', err);
-                    }
-
+                    try { SceneUtils.playSound(this, 'buttonClick', { volume: 0.6 }); } catch (err) { /* ignore */ }
                     this.buyItemAndLeave(item);
                 });
                 
@@ -559,13 +565,7 @@ class GameScene extends Phaser.Scene {
         nothingBg.setInteractive({ useHandCursor: true });
         
         nothingBg.on('pointerdown', () => {
-            try {
-                if (this.sound && this.sound.play) {
-                    this.sound.play('buttonClick', { volume: 0.6 });
-                }
-            } catch (err) {
-                console.warn('buttonClick sound play failed:', err);
-            }
+            try { SceneUtils.playSound(this, 'buttonClick', { volume: 0.6 }); } catch (err) { /* ignore */ }
 
             this.leaveShop();
         });
@@ -624,8 +624,9 @@ class GameScene extends Phaser.Scene {
         }
         
         // 顯示購買結果
+        try { SceneUtils.playSound(this, 'eventPositive'); } catch (e) { /* ignore */ }
         this.eventText.setText(
-            `✅ 購買成功！\n\n${item.effect.message}\n\n💰 剩餘金錢: ${this.playerMoney}`
+            `✅ 購買成功！\n\n${item.effect.message}\n\n💰 剩餘金錢: ${SceneUtils.formatMoney(this.playerMoney)}`
         );
         
         // 恢復下一關按鈕
@@ -681,8 +682,8 @@ class GameScene extends Phaser.Scene {
         
         console.log('技能數據檢查通過，技能:', event.skills);
         
-        // 顯示神秘導師描述
-        this.eventText.setText(`${event.description}\n\n神秘導師說：「你渴望力量嗎？我可以傳授你特殊的\n戰鬥技巧。」\n\n💰 你的金錢: ${this.playerMoney}`);
+    // 顯示神秘導師描述
+    this.eventText.setText(`${event.description}\n\n神秘導師說：「你渴望力量嗎？我可以傳授你特殊的\n戰鬥技巧。」\n\n💰 你的金錢: ${SceneUtils.formatMoney(this.playerMoney)}`);
         
         // 清理現有的商店按鈕（如果有的話）
         if (this.shopButtons) {
@@ -808,18 +809,12 @@ class GameScene extends Phaser.Scene {
         if (canLearnOrUpgrade) {
             boxBg.setInteractive({ useHandCursor: true });
             
-            boxBg.on('pointerdown', () => {
+                boxBg.on('pointerdown', () => {
                 // 防止重複點擊 - 立即禁用交互
                 boxBg.disableInteractive();
                 actionText.setText('處理中...');
                 actionText.setFill('#666666');
-                try {
-                    if (this.sound && this.sound.play) {
-                        this.sound.play('buttonClick', { volume: 0.6 });
-                    }
-                } catch (err) {
-                    console.warn('buttonClick sound play failed:', err);
-                }
+                    try { SceneUtils.playSound(this, 'buttonClick', { volume: 0.6 }); } catch (err) { /* ignore */ }
 
                 this.learnSkillAndLeave(skill);
             });
@@ -865,13 +860,7 @@ class GameScene extends Phaser.Scene {
             leaveBg.disableInteractive();
             leaveText.setText('離開中...');
             leaveText.setFill('#999999');
-            try {
-                if (this.sound && this.sound.play) {
-                    this.sound.play('buttonClick', { volume: 0.6 });
-                }
-            } catch (err) {
-                console.warn('buttonClick sound play failed:', err);
-            }
+            try { SceneUtils.playSound(this, 'buttonClick', { volume: 0.6 }); } catch (err) { /* ignore */ }
             
             this.leaveSkillShop();
         });
@@ -941,13 +930,15 @@ class GameScene extends Phaser.Scene {
             this.shopButtons = [];
         }
         
-        // 顯示學習結果
+    // 播放升級/學習成功的音效
+    try { SceneUtils.playSound(this, 'levelUp'); } catch (e) { /* ignore */ }
+    // 顯示學習結果
         const skillName = skill.name;
         const currentLevel = this.playerSkills[skill.id].level;
         const skillDescription = this.playerSkills[skill.id].description; // 使用已更新的描述
         
         this.eventText.setText(
-            `✅ 技能學習成功！\n\n獲得技能：${skillName} (等級 ${currentLevel})\n\n${skillDescription}\n\n💰 剩餘金錢: ${this.playerMoney}`
+            `✅ 技能學習成功！\n\n獲得技能：${skillName} (等級 ${currentLevel})\n\n${skillDescription}\n\n💰 剩餘金錢: ${SceneUtils.formatMoney(this.playerMoney)}`
         );
         
         // 恢復下一關按鈕
@@ -1223,6 +1214,7 @@ class GameScene extends Phaser.Scene {
         
         if (playerDeath) {
             // 玩家死亡
+            try { SceneUtils.playSound(this, 'gameOver'); } catch (e) { /* ignore */ }
             this.eventText.setText(
                 `你在與 ${this.battleData.monster.name} 的戰鬥中陣亡！\n\n💀 遊戲結束！點擊重新開始回到首頁。`
             );
@@ -1234,9 +1226,9 @@ class GameScene extends Phaser.Scene {
             // 玩家勝利
             GameDatabase.addMoney(this.battleData.reward.money);
             this.playerMoney = GameDatabase.loadMoney();
-            
+            try { SceneUtils.playSound(this, 'levelUp'); } catch (e) { /* ignore */ }
             this.eventText.setText(
-                `✅ 戰鬥勝利！\n\n${this.battleData.reward.message}\n\n💰 總金錢: ${this.playerMoney}`
+                `✅ 戰鬥勝利！\n\n${this.battleData.reward.message}\n\n💰 總金錢: ${SceneUtils.formatMoney(this.playerMoney)}`
             );
             
             // 恢復下一關按鈕
@@ -1314,9 +1306,9 @@ class GameScene extends Phaser.Scene {
         this.healthText.setText(`血量: ${this.playerHealth}/${this.maxHealth}`);
         
         // 更新上方UI
-        this.attackText.setText(`⚔️ ${this.playerAttack}`);
-        this.defenseText.setText(`🛡️ ${this.playerDefense}`);
-        this.moneyText.setText(`💰 ${this.playerMoney}`);
+    this.attackText.setText(`⚔️ ${this.playerAttack}`);
+    this.defenseText.setText(`🛡️ ${this.playerDefense}`);
+    try { this.moneyText.setText(`💰 ${SceneUtils.formatMoney(this.playerMoney)}`); } catch (e) { this.moneyText.setText(`💰 ${this.playerMoney}`); }
 
         // 注意：由於 healthBar 現在是圖片(image)，不能使用 setFillStyle
         // 圖片的顏色變化需要通過 setTint 或其他方式實現
@@ -1342,13 +1334,7 @@ class GameScene extends Phaser.Scene {
         this.nextLevelButton.setInteractive({ useHandCursor: true });
         
         this.nextLevelButton.on('pointerdown', () => {
-            try {
-                if (this.sound && this.sound.play) {
-                    this.sound.play('buttonClick', { volume: 0.6 });
-                }
-            } catch (err) {
-                console.warn('buttonClick sound play failed:', err);
-            }
+            try { SceneUtils.playSound(this, 'buttonClick', { volume: 0.6 }); } catch (err) { /* ignore */ }
 
             this.nextLevelButton.setScale(0.95);
             this.time.delayedCall(100, () => {
