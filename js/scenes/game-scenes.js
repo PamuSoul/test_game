@@ -417,7 +417,7 @@ class GameScene extends Phaser.Scene {
         const selectedItems = shuffledItems.slice(0, itemCount);
         
         // 顯示商人描述
-        this.eventText.setText(`${event.description}\n\n商人說：「歡迎光臨！看看我有什麼好東西！」\n💰 你的金錢: ${this.playerMoney}`);
+            this.eventText.setText(`${event.description}\n\n商人說：「歡迎光臨！看看我有什麼好東西！」\n💰 你的金錢: ${SceneUtils.formatMoney(this.playerMoney)}`);
         
         // 清理現有的商店按鈕（如果有的話）
         if (this.shopButtons) {
@@ -425,8 +425,8 @@ class GameScene extends Phaser.Scene {
         }
         this.shopButtons = [];
         
-        // 方框大小和位置設定
-        const boxSize = 60;
+    // 方框大小和位置設定（改為與技能商店一致的較大樣式）
+    const boxSize = 80;
         
         // 根據商品數量調整位置
         let positions = [];
@@ -448,49 +448,56 @@ class GameScene extends Phaser.Scene {
             const pos = positions[index];
             const canAfford = this.playerMoney >= item.price;
             
-            // 創建方框背景
+            // 創建方框背景（使用技能商店相同的視覺風格）
             const boxBg = this.add.rectangle(pos.x, pos.y, boxSize, boxSize);
-            boxBg.setFillStyle(canAfford ? 0x2c3e50 : 0x95a5a6);
-            boxBg.setStrokeStyle(3, canAfford ? 0x3498db : 0x7f8c8d);
-            
-            // 創建物品名稱（簡短版本）
+            boxBg.setFillStyle(canAfford ? 0x9b59b6 : 0x95a5a6);
+            boxBg.setStrokeStyle(3, canAfford ? 0x8e44ad : 0x7f8c8d);
+
+            // 創建物品名稱（簡短版本） - 使用較大字體並加描邊，以符合技能商店風格
             let shortName = item.name;
             if (item.name === "治療藥水") shortName = "小藥水";
             if (item.name === "大型治療藥水") shortName = "大藥水";
             if (item.name === "生命護符") shortName = "護符";
             if (item.name === "龍鱗盔甲") shortName = "盔甲";
-            
-            const nameText = this.add.text(pos.x, pos.y - 15, shortName, {
-                fontSize: '9px',
-                fill: canAfford ? '#ffffff' : '#bdc3c7',
+
+            const nameText = this.add.text(pos.x, pos.y - 20, shortName, {
+                fontSize: '16px',
+                fontFamily: 'Arial, sans-serif',
+                fontWeight: 'bold',
+                fill: canAfford ? '#ffffff' : '#f0f0f0',
                 align: 'center',
-                fontFamily: 'Arial, sans-serif'
-            });
-            nameText.setOrigin(0.5);
-            
-            // 創建價格文字
-            const priceText = this.add.text(pos.x, pos.y + 5, `${item.price}💰`, {
-                fontSize: '9px',
-                fill: canAfford ? '#f1c40f' : '#95a5a6',
+                stroke: '#6c3483',
+                strokeThickness: 2
+            }).setOrigin(0.5);
+            if (typeof nameText.setResolution === 'function') nameText.setResolution(window.devicePixelRatio || 1);
+
+            // 創建價格文字（使用共用格式化函式）
+            const priceText = this.add.text(pos.x, pos.y + 5, `${SceneUtils.formatMoney(item.price)} 💰`, {
+                fontSize: '12px',
+                fontFamily: 'Arial, sans-serif',
+                fill: canAfford ? '#f1c40f' : '#bdc3c7',
                 align: 'center',
-                fontFamily: 'Arial, sans-serif'
-            });
-            priceText.setOrigin(0.5);
-            
-            // 創建效果文字
+                fontWeight: 'bold',
+                stroke: canAfford ? '#7f6b00' : '#7f8c8d',
+                strokeThickness: 1
+            }).setOrigin(0.5);
+            if (typeof priceText.setResolution === 'function') priceText.setResolution(window.devicePixelRatio || 1);
+
+            // 創建效果文字（在方框下方）
             let effectText = "";
             if (item.effect.health) effectText = `+${item.effect.health}❤️`;
             if (item.effect.maxHealth) effectText = `+${item.effect.maxHealth}💪`;
             if (item.effect.attack) effectText = `+${item.effect.attack}⚔️`;
             if (item.effect.defense) effectText = `+${item.effect.defense}🛡️`;
-            
+
             const effectDisplay = this.add.text(pos.x, pos.y + 18, effectText, {
-                fontSize: '8px',
+                fontSize: '11px',
+                fontFamily: 'Arial, sans-serif',
                 fill: canAfford ? '#27ae60' : '#95a5a6',
                 align: 'center',
-                fontFamily: 'Arial, sans-serif'
-            });
-            effectDisplay.setOrigin(0.5);
+                fontWeight: 'bold'
+            }).setOrigin(0.5);
+            if (typeof effectDisplay.setResolution === 'function') effectDisplay.setResolution(window.devicePixelRatio || 1);
             
             // 將所有元素加入數組以便管理
             const buttonElements = [boxBg, nameText, priceText, effectDisplay];
@@ -513,12 +520,14 @@ class GameScene extends Phaser.Scene {
                 });
                 
                 boxBg.on('pointerover', () => {
-                    boxBg.setFillStyle(0x34495e);
+                    // 使用技能商店 hover 色彩
+                    boxBg.setFillStyle(0x8e44ad);
                     boxBg.setScale(1.1);
                 });
-                
+
                 boxBg.on('pointerout', () => {
-                    boxBg.setFillStyle(0x2c3e50);
+                    // 還原為可購買/不可購買的顏色
+                    boxBg.setFillStyle(canAfford ? 0x9b59b6 : 0x95a5a6);
                     boxBg.setScale(1);
                 });
             }

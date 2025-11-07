@@ -273,7 +273,7 @@ const gameEvents = [
                 chance: 0.15
             }
         ],
-        weight: 15  // 中等機率事件
+        weight: 10  // 中等機率事件
     }
 ];
 
