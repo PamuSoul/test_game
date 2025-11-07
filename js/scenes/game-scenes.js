@@ -921,8 +921,13 @@ class GameScene extends Phaser.Scene {
             
             // 根據技能類型設置初始效果
             if (skill.id === 'dual_strike') {
-                this.playerSkills[skill.id].chance = skill.chance || 0.15; // 使用技能定義中的機率
-                this.playerSkills[skill.id].description = `${(this.playerSkills[skill.id].chance * 100).toFixed(0)}% 機率發動二刀流攻擊`;
+                // 使用集中化 SKILLS 定義來取得等級對應的機率與描述
+                let chance = skill.chance || 0.15;
+                if (window.SKILLS && typeof window.SKILLS.get === 'function') {
+                    const s = window.SKILLS.get('dual_strike');
+                    if (s && typeof s.getChance === 'function') chance = s.getChance(1);
+                }
+                this.playerSkills[skill.id].description = `${Math.round(chance * 100)}% 機率發動二刀流攻擊`;
             }
         } else {
             // 升級現有技能
@@ -931,9 +936,15 @@ class GameScene extends Phaser.Scene {
             // 根據等級更新技能效果
             if (skill.id === 'dual_strike') {
                 const level = this.playerSkills[skill.id].level;
-                const baseChance = skill.chance || 0.15; // 使用技能定義中的基礎機率
-                this.playerSkills[skill.id].chance = baseChance + (level - 1) * 0.1; // 每級+10%
-                this.playerSkills[skill.id].description = `${(this.playerSkills[skill.id].chance * 100).toFixed(0)}% 機率發動二刀流攻擊`;
+                // 使用 SKILLS 中的等級機率（若 SKILLS 不存在則退回 skill.chance 的簡單增益）
+                let chance = skill.chance || 0.15;
+                if (window.SKILLS && typeof window.SKILLS.get === 'function') {
+                    const s = window.SKILLS.get('dual_strike');
+                    if (s && typeof s.getChance === 'function') chance = s.getChance(level);
+                } else {
+                    chance = Math.min(0.15 + (level - 1) * 0.1, 0.99);
+                }
+                this.playerSkills[skill.id].description = `${Math.round(chance * 100)}% 機率發動二刀流攻擊`;
             }
         }
         
@@ -1152,22 +1163,23 @@ class GameScene extends Phaser.Scene {
         this.updateBattleDisplay();
         this.addBattleLog(`你攻擊 ${this.battleData.monster.name}，造成 ${damage} 點傷害！`);
         
-        // 檢查二刀流技能（臨時技能）
-        const dualStrike = this.playerSkills ? this.playerSkills['dual_strike'] : null;
-        console.log('檢查二刀流技能:', dualStrike); // 調試信息
-        
-        if (dualStrike && this.battleData.monster.health > 0) {
-            // 根據技能等級判斷是否觸發
-            const random = Math.random();
-            console.log(`二刀流檢定: ${random.toFixed(3)} < ${dualStrike.chance} (${(dualStrike.chance * 100).toFixed(0)}%)`); // 調試信息
-            
-            if (random < dualStrike.chance) {
-                // 觸發二刀流！
-                const secondDamage = Math.max(1, this.playerAttack - this.battleData.monster.defense);
-                this.battleData.monster.health = Math.max(0, this.battleData.monster.health - secondDamage);
-                
-                this.updateBattleDisplay();
-                this.addBattleLog(`⚔️⚔️ 二刀流發動！再次攻擊造成 ${secondDamage} 點傷害！`);
+        // 檢查二刀流技能（臨時技能）— 使用集中在 js/config/skills.js 的 SKILLS 配置
+        const playerSkillRecord = this.playerSkills ? this.playerSkills['dual_strike'] : null;
+        // 若玩家沒有記錄該技能，跳過
+        if (playerSkillRecord && this.battleData.monster.health > 0) {
+            // 決定技能等級：優先使用記錄中的 level，否則預設為 1
+            let skillLevel = 1;
+            if (typeof playerSkillRecord.level !== 'undefined') skillLevel = Math.max(1, parseInt(playerSkillRecord.level) || 1);
+
+            // 使用集中化的 SKILLS 定義來判定與計算二刀流的額外傷害
+            if (window.SKILLS && typeof window.SKILLS.shouldTrigger === 'function' && typeof window.SKILLS.calculateExtraDamage === 'function') {
+                // 使用集中化的 SKILLS 來判定與計算二刀流的額外傷害
+                if (window.SKILLS.shouldTrigger('dual_strike', skillLevel)) {
+                    const secondDamage = window.SKILLS.calculateExtraDamage('dual_strike', damage, skillLevel);
+                    this.battleData.monster.health = Math.max(0, this.battleData.monster.health - secondDamage);
+                    this.updateBattleDisplay();
+                    this.addBattleLog(`⚔️⚔️ 二刀流發動！再次攻擊造成 ${secondDamage} 點傷害！`);
+                }
             }
         }
     }
