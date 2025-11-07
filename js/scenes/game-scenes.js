@@ -147,14 +147,14 @@ class GameScene extends Phaser.Scene {
 
         // 玩家 - 根據原始 game_fixed.js 的設定
         if (this.textures.exists('player')) {
-            this.player = this.add.sprite(60, 300, 'player');
+            this.player = this.add.sprite(60, 320, 'player');
             
             // 計算適當的縮放比例（目標大小約 80x80）
             const playerTexture = this.textures.get('player');
             const originalWidth = playerTexture.source[0].width;
             const originalHeight = playerTexture.source[0].height;
             
-            const targetSize = 80;
+            const targetSize = 120;
             const scaleX = targetSize / originalWidth;
             const scaleY = targetSize / originalHeight;
             const scale = Math.min(scaleX, scaleY); // 保持比例
@@ -1064,13 +1064,13 @@ class GameScene extends Phaser.Scene {
 
         if (assetKey && this.textures.exists(assetKey)) {
             // 使用圖片顯示怪物，並縮放到合理大小
-            const monsterImg = this.add.image(280, 300, assetKey).setOrigin(0.5);
+            const monsterImg = this.add.image(280, 320, assetKey).setOrigin(0.5);
             // 嘗試依據圖大小做縮放（限定最大寬/高）
             const tex = this.textures.get(assetKey);
             if (tex && tex.source && tex.source[0]) {
                 const w = tex.source[0].width || 64;
                 const h = tex.source[0].height || 64;
-                const maxSize = 80;
+                const maxSize = 120;
                 const scale = Math.min(maxSize / w, maxSize / h, 1);
                 monsterImg.setScale(scale);
             }
@@ -1094,12 +1094,12 @@ class GameScene extends Phaser.Scene {
         // this.battleElements.push(monsterNameText);
         
         // 怪物血量背景
-        const monsterHealthBg = this.add.rectangle(280, 360, 100, 15, 0x2c3e50);
+        const monsterHealthBg = this.add.rectangle(280, 380, 100, 15, 0x2c3e50);
         monsterHealthBg.setStrokeStyle(1, 0x34495e);
         this.battleElements.push(monsterHealthBg);
         
         // 怪物血量條 (綠色)
-        this.monsterHealthBar = this.add.rectangle(230, 360, 100, 15, 0x27ae60);
+        this.monsterHealthBar = this.add.rectangle(230, 380, 100, 15, 0x27ae60);
         this.monsterHealthBar.setOrigin(0, 0.5);
         this.battleElements.push(this.monsterHealthBar);
     }
