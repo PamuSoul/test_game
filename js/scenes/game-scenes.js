@@ -203,10 +203,10 @@ class GameScene extends Phaser.Scene {
         this.healthText = this.add.text(187.5, 75, `血量: ${this.playerHealth}/${this.maxHealth}`, {
             fontSize: '14px',
             fontFamily: 'Arial, sans-serif',
-            fill: '#2c3e50',
+            fill: '#fc0909ff',
             fontWeight: 'bold',
             stroke: '#ffffff',
-            strokeThickness: 1
+            strokeThickness: 0.5
         }).setOrigin(0.5);
 
         // 血量條背景
