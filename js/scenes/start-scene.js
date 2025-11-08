@@ -71,18 +71,49 @@ class StartScene extends Phaser.Scene {
             this.scene.start('GameScene');
         }, { width: 250, height: 70, strokeColor: 0x1e8449, strokeWidth: 4, fontSize: '24px' });
 
-        // 嘗試在 start 場景播放背景音樂（若瀏覽器允許自動播放則會播放）
+        // 嘗試在 start 場景播放背景音樂（自動播放可能被瀏覽器阻擋）
         try {
-            if (this.sound && this.sound.add && window.ASSETS && window.ASSETS.audio) {
-                if (!this.sound.get('backgroundMusic') && window.ASSETS.audio.backgroundMusic) {
-                    const bg = this.sound.add('backgroundMusic', { loop: true, volume: 0.35 });
-                    // play 可能會被瀏覽器阻擋（自動播放策略），因此包在 try/catch
-                    try {
-                        bg.play();
-                    } catch (err) {
-                        console.warn('backgroundMusic play blocked or failed:', err);
-                    }
+            if (this.sound && this.sound.add && window.ASSETS && window.ASSETS.audio && window.ASSETS.audio.backgroundMusic) {
+                // 若尚未建立實例，建立一個全域可查的 bgm 實例（以便其他場景重用）
+                let bg = this.sound.get('backgroundMusic');
+                if (!bg) {
+                    bg = this.sound.add('backgroundMusic', { loop: true, volume: 0.35 });
                 }
+
+                // 先嘗試正常播放（在部分瀏覽器會被阻擋）
+                try {
+                    bg.play();
+                } catch (err) {
+                    // 若 play 拋出錯誤，降級為靜音播放並等待使用者互動解除靜音
+                    console.warn('backgroundMusic play blocked or failed:', err);
+                    try { bg.setMute(true); bg.play(); } catch (e) { /* ignore */ }
+                }
+
+                // 如果 play 沒有拋錯，但仍可能因自動播放策略未實際開始，延遲檢查 isPlaying
+                this.time.delayedCall(250, () => {
+                    try {
+                        if (!bg.isPlaying) {
+                            // 無法在此時段自動播放，改成靜音播放並顯示提示以便使用者解除靜音
+                            try { bg.setMute(true); if (!bg.isPlaying) bg.play(); } catch (e) { /* ignore */ }
+
+                            // 顯示小提示按鈕，點擊會解除靜音並移除提示
+                            const hintBg = this.add.rectangle(187.5, 520, 240, 48, 0x000000, 0.75).setOrigin(0.5);
+                            const hintText = this.add.text(187.5, 520, '點擊以啟用音樂', { fontSize: '16px', fill: '#ffffff', fontWeight: 'bold' }).setOrigin(0.5);
+                            hintBg.setInteractive({ useHandCursor: true });
+                            hintBg.on('pointerdown', () => {
+                                try { bg.setMute(false); if (!bg.isPlaying) bg.play(); } catch (e) { /* ignore */ }
+                                try { hintBg.destroy(); hintText.destroy(); } catch (e) { /* ignore */ }
+                            });
+                            // 也允許整個畫面任何操作解除靜音（一次性）
+                            this.input.once('pointerdown', () => {
+                                try { bg.setMute(false); if (!bg.isPlaying) bg.play(); } catch (e) { /* ignore */ }
+                                try { hintBg.destroy(); hintText.destroy(); } catch (e) { /* ignore */ }
+                            });
+                        }
+                    } catch (err) {
+                        // 忽略檢查錯誤
+                    }
+                });
             }
         } catch (err) {
             console.warn('背景音樂處理時發生錯誤:', err);
